@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<project name="Mandela" default="build">
+	<description>A simple Mandlebrot rendering application.</description>
+	<property name="nant.settings.currentframework" value="mono-4.5" />
+	<property name="debug" value="true" overwrite="false" />
+
+	<target name="clean" description="remove all generated files">
+		<delete file="bin/Mandela.exe" if="${file::exists('bin/Mandela.exe')}" />
+		<delete file="bin/Mandela.pdb" if="${file::exists('bin/Mandela.pdb')}" />
+		<delete file="bin/Mandela.exe.mdb" if="${file::exists('bin/Mandela.exe.mdb')}" />
+	</target>
+
+	<target name="build" description="compiles the source code">
+		<mkdir dir="bin" />
+		<csc target="winexe" output="bin/Mandela.exe" debug="${debug}">
+			<sources>
+				<include name="Main.cs" />
+				<include name="MandelaWindow.cs" />
+				<include name="ChaosControl.cs" />
+				<include name="ChaosMachine.cs" />
+				<include name="ChaosEngine.cs" />
+				<include name="ChaosEngineParams.cs" />
+				<include name="ChaosEngineList.cs" />
+				<include name="ChaosRenderMethod.cs" />
+				<include name="SuperImage.cs" />
+				<include name="SuperColor.cs" />
+				<include name="LogFile.cs" />
+				<include name="TimeSpan.cs" />
+				<include name="DataStructureBase.cs" />
+				<include name="LinkedList.cs" />
+				<include name="AssemblyInfo.cs" />
+				<include name="Engines/Grid_Test.cs" />
+				<include name="Engines/Mandelbrot.cs" />
+				<include name="Engines/Julia.cs" />
+			</sources>
+			<pkg-references>
+				<package name="gtk-sharp-2.0" />
+			</pkg-references>
+		</csc>
+		<copy todir="bin">
+		<fileset basedir="."><include name="Mandela.sh" /></fileset>
+		</copy>
+	</target>
+
+	<target name="run" depends="build">
+		<exec program="bin/Mandela.exe" />
+	</target>
+</project>
