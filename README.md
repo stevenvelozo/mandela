@@ -75,4 +75,4 @@ There is a mechanism to adjust quality, and it does indeed make the images look 
 	[2:10:26 PM]Renderer :  --> Subquad 0,1 Done [650000/650000]
 	[2:10:26 PM]Renderer : *** Image Computation Complete (135752ms) ***
 
-![Mandela Zoom Interface](https://github.com/stevenvelozo/mandela/raw/master/screens/Mandela-HQ.png)
+![Mandela Higher Quality Render](https://github.com/stevenvelozo/mandela/raw/master/screens/Mandela-HQ.png)
