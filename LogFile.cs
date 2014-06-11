@@ -1,81 +1,75 @@
 using System;
 using System.IO;
 
-namespace Master_Log_File
+namespace MasterLogFile
 {
 	#region Event Arguments and Delegates
 	/// <summary>
 	/// This is the Write Log event arguments for logging events.
 	/// </summary>
-	public class Write_Log_Event_Args : EventArgs 
-	{   
-		private string arg_Log_Text = "";
-		private int arg_Log_Level = 0;
+	public class WriteLogEventArgs : EventArgs
+	{
+		private string _LogText = "";
+		private int _LogLevel = 0;
 
 		/// <summary>
 		/// This generates the log text template to be sent when the event fires.
 		/// </summary>
 		/// <param name="ToLog_Text">The text to log.</param>
 		/// <param name="ToLog_Level">The way the text is expected to be used; 0 for display, 1 for display and file, 2 for file only.</param>
-		public Write_Log_Event_Args( string To_Log_Text, int To_Log_Level )
+		public WriteLogEventArgs( string pLogText, int pLogLevel )
 		{
 			//Nothing fancy to be done, this is a data encapsulation class
-			this.arg_Log_Text = To_Log_Text;
-			this.arg_Log_Level = To_Log_Level;
+			this._LogText = pLogText;
+			this._LogLevel = pLogLevel;
 		}
 
 		// Properties.
-		public string Log_Text
-		{ 
-			get 
-			{ 
-				return this.arg_Log_Text;
-			}
+		public string LogText
+		{
+			get { return this._LogText; }
 		}
 
-		public int Log_Level
+		public int LogLevel
 		{
-			get
-			{
-				return this.arg_Log_Level;
-			}
-		}    
+			get { return this._LogLevel; }
+		}
 	}
 
 	/// <summary>
 	/// This is a delegate that offers interfaces to log files and rolling log displays.
-	/// </summary>	
-	public delegate void Write_Log_Event_Handler (object sender, Write_Log_Event_Args e);
+	/// </summary>
+	public delegate void WriteLogEventHandler (object pSender, WriteLogEventArgs pArguments);
 	#endregion
 
 	#region Master Log File Class
 	/// <summary>
 	/// Base Main Rolling Log File class
 	/// </summary>
-	public class Log_File
+	public class LogFile
 	{
-		private string File_Name_Preface;
-		private string File_Path;
-		private string File_Name;
+		private string _FileNamePreface;
+		private string _FilePath;
+		private string _FileName;
 
 		//The date of the log file -- to be prepended to the file name.
-		private System.DateTime Log_Date;
+		private System.DateTime _LogDate;
 
-		private FileInfo Log_File_Info;
-		private StreamWriter Log_File_Stream_Writer;
-		private bool Log_File_Open;
-		
-		private bool Write_To_Console;
+		private FileInfo _LogFileInfo;
+		private StreamWriter _LogFileStreamWriter;
+		private bool _LogFileOpen;
+
+		private bool _WriteToConsole;
 
 		#region Initializers
-		public Log_File ()
+		public LogFile ()
 		{
-			this.Initialize_File( this.GetHashCode().ToString(), "" );
+			this.InitializeFile( this.GetHashCode().ToString(), "" );
 		}
-		
-		public Log_File ( string File_Name_Preface )
+
+		public LogFile (string pFileNamePreface)
 		{
-			this.Initialize_File( File_Name_Preface, "" );
+			this.InitializeFile( pFileNamePreface, "" );
 		}
 
 		/// <summary>
@@ -83,99 +77,80 @@ namespace Master_Log_File
 		/// </summary>
 		/// <param name="FileNamePreface">The preface text appended to the file name.</param>
 		/// <param name="FilePath">The location of the log file.</param>
-		public Log_File( string File_Name_Preface, string File_Path )
+		public LogFile( string pFileNamePreface, string pFilePath )
 		{
-			this.Initialize_File( File_Name_Preface, File_Path );
+			this.InitializeFile( pFileNamePreface, pFilePath );
 		}
 
-		private void Initialize_File( string File_Name_Preface, string File_Path )
+		private void InitializeFile( string pFileNamePreface, string pFilePath )
 		{
 			//Initialize the class information
-			if ( File_Path == "" )
-				this.File_Path = System.AppDomain.CurrentDomain.BaseDirectory+"/";
+			if ( pFilePath == "" )
+				this._FilePath = System.AppDomain.CurrentDomain.BaseDirectory+"/";
 			else
-				this.File_Path = File_Path;
+				this._FilePath = pFilePath;
 
-			this.File_Name_Preface = File_Name_Preface;
-			
-			this.Log_File_Open = false;
-			
-			this.Write_To_Console = false;
+			this._FileNamePreface = pFileNamePreface;
+
+			this._LogFileOpen = false;
+
+			this._WriteToConsole = false;
 		}
-		
-		~Log_File()
+
+		~LogFile()
 		{
 			//This is causing trouble.
-			if ( this.Log_File_Open )
-				this.Close_Log_File();
+			if ( this._LogFileOpen )
+				this.CloseLogFile();
 		}
 		#endregion
-		
+
 		#region Data Access
-		public string Log_File_Preface
+		public string LogFilePrefix
 		{
-			get
-			{
-				return this.File_Name_Preface;
-			}
-			set
-			{
-				this.File_Name_Preface = value;
-			}
+			get { return this._FileNamePreface; }
+			set { this._FileNamePreface = value; }
 		}
-		
+
 		public string Log_File_Path
 		{
-			get
-			{
-				return this.File_Path;
-			}
-			set
-			{
-				this.File_Path = value;
-			}
+			get { return this._FilePath; }
+			set { this._FilePath = value; }
 		}
-		
-		public bool Echo_To_Console
+
+		public bool EchoToConsole
 		{
-			get
-			{
-				return this.Write_To_Console;
-			}
-			set
-			{
-				this.Write_To_Console = value;
-			}
+			get { return this._WriteToConsole; }
+			set { this._WriteToConsole = value; }
 		}
 		#endregion
-		
+
 		/// <summary>
 		/// Actually write the text to the log file.
 		/// </summary>
 		/// <param name="Log_Text">The text to be written.</param>
-		public void Write_Log_File( string Log_Text )
+		public void WriteLogFile( string pLogText )
 		{
 			try
 			{
-				if ( ( !this.Log_File_Open ) || ( System.DateTime.Now.Date != this.Log_Date.Date ) )
-				{
-					this.Open_Log_File();
-				}
+				if ( ( !this._LogFileOpen ) || ( System.DateTime.Now.Date != this._LogDate.Date ) )
+					this.OpenLogFile();
 
 				//Now write out the time stamp and then the log text to a line in the log file
 				//System.Diagnostics.Debug.WriteLine( string.Concat("WROTE [", CurrentTime.Hour, ":", CurrentTime.Minute, ":", CurrentTime.Second, "]", Log_Text) );
-				this.Log_File_Stream_Writer.WriteLine( string.Concat("[", System.DateTime.Now.ToLongTimeString(), "]", Log_Text) );
-				
-				if ( this.Write_To_Console )
-					Console.WriteLine( string.Concat("[", System.DateTime.Now.ToLongTimeString(), "]", Log_Text ) );
+				this._LogFileStreamWriter.WriteLine( string.Concat("[", System.DateTime.Now.ToLongTimeString(), "]", pLogText) );
+
+				if ( this._WriteToConsole )
+					Console.WriteLine( string.Concat("[", System.DateTime.Now.ToLongTimeString(), "]", pLogText ) );
 
 				//Since we send very little data, and the Stream Writer does not automatically
 				//flush itself, we have to manually flush the stream after every write in order
 				//to insure the lines will be written properly.
-				this.Log_File_Stream_Writer.Flush();
+				this._LogFileStreamWriter.Flush();
 			}
 			catch
 			{
+				// Meh
 			}
 		}
 
@@ -183,38 +158,38 @@ namespace Master_Log_File
 		/// <summary>
 		/// Open the log file in the path with the specified name.
 		/// </summary>
-		private void Open_Log_File()
+		private void OpenLogFile()
 		{
 			try
 			{
-				if ( Log_File_Open )
-					this.Close_Log_File();
+				if ( _LogFileOpen )
+					this.CloseLogFile();
 
 				//Set the log file date
-				this.Log_Date = System.DateTime.Now;
+				this._LogDate = System.DateTime.Now;
 
 				//Mash together the file name from the date and prefix
-				this.File_Name = string.Concat( this.Log_Date.Year, "-", this.Log_Date.Month, "-", this.Log_Date.Day, "-", this.File_Name_Preface, ".log" );
+				this._FileName = string.Concat( this._LogDate.Year, "-", this._LogDate.Month, "-", this._LogDate.Day, "-", this._FileNamePreface, ".log" );
 
 				//Open up a file information class
-				this.Log_File_Info = new FileInfo( string.Concat( this.File_Path, this.File_Name ) );
+				this._LogFileInfo = new FileInfo( string.Concat( this._FilePath, this._FileName ) );
 
 				//Now open up a stream writer to the opened file info class
-				this.Log_File_Stream_Writer = this.Log_File_Info.AppendText();
+				this._LogFileStreamWriter = this._LogFileInfo.AppendText();
 
-				this.Log_File_Open = true;
+				this._LogFileOpen = true;
 			}
 			catch
 			{
 			}
 		}
 
-		private void Close_Log_File()
+		private void CloseLogFile()
 		{
 			try
 			{
-				this.Log_File_Stream_Writer.Close();
-				this.Log_File_Open = false;
+				this._LogFileStreamWriter.Close();
+				this._LogFileOpen = false;
 			}
 			catch
 			{
@@ -223,108 +198,90 @@ namespace Master_Log_File
 		#endregion
 	}
 	#endregion
-	
+
 	/// <summary>
 	/// This class provides pass-through and shim event handlers for log files
 	/// </summary>
-	public class Pass_Through_Logged_Class
+	public class PassThroughLoggedClass
 	{
-		public event Write_Log_Event_Handler Write_Log;
+		public event WriteLogEventHandler WriteLog;
 
 		/// <summary>
 		/// Write to the log file/display.
 		/// </summary>
 		/// <param name="Log_Text">The text to be written.</param>
 		/// <param name="Log_Level">The numeric level of the log text.  In general, 0 is screen, 1 is both, 2 is file only.</param>
-		protected virtual void Write_To_Log( string Log_Text, int Log_Level )
+		protected virtual void WriteToLog( string pLogText, int pLogLevel )
 		{
-			Write_Log_Event_Args e = new Write_Log_Event_Args( Log_Text, Log_Level );
+			WriteLogEventArgs pArguments = new WriteLogEventArgs( pLogText, pLogLevel );
 
-			this.On_Write_Log ( e );
+			this.OnWriteLog ( pArguments );
 		}
 
-		protected virtual void Write_To_Log( string Log_Text )
+		protected virtual void WriteToLog( string pLogText )
 		{
 			//Default log level is 1 (display and log to file)
-			this.Write_To_Log( Log_Text, 1);
-		}		
+			this.WriteToLog( pLogText, 1);
+		}
 
 
-		protected virtual void On_Write_Log( Write_Log_Event_Args e )
+		protected virtual void OnWriteLog( WriteLogEventArgs pArguments )
 		{
-			if ( this.Write_Log != null )
+			if ( this.WriteLog != null )
 			{
 				//Invoke the event delegate
-				Write_Log ( this, e );
+				WriteLog ( this, pArguments );
 			}
 		}
 
-		protected virtual void Chained_Write_Log( object sender, Write_Log_Event_Args e )
+		protected virtual void ChainedWriteLog( object sender, WriteLogEventArgs pArguments )
 		{
 			//A shim function to chain log events from objects here to the main application's events.
-			this.On_Write_Log( e );
+			this.OnWriteLog( pArguments );
 		}
 	}
-	
+
 	/// <summary>
 	/// This class provides pass-through and logging facilities, for classes that need to
 	/// both log data and pass the data through to the next class via events and shims
 	/// </summary>
-	public class Master_Logged_Class : Pass_Through_Logged_Class
+	public class Master_Logged_Class : PassThroughLoggedClass
 	{
-		private Log_File Main_Log_File;
-		
+		private LogFile _LogFile;
+
 		public Master_Logged_Class()
 		{
-			this.Main_Log_File = new Log_File ();
+			this._LogFile = new LogFile ();
 		}
-		
+
 		#region Data Access
 		/// <summary>
 		/// The prefix to go before log files.
 		/// Defaults to the classes unique hash code.
 		/// </summary>
-		protected string Log_File_Prefix
+		protected string LogFilePrefix
 		{
-			set
-			{
-				this.Main_Log_File.Log_File_Preface = value;
-			}
-			get
-			{
-				return this.Main_Log_File.Log_File_Preface;
-			}
+			set { this._LogFile.LogFilePrefix = value; }
+			get { return this._LogFile.LogFilePrefix; }
 		}
-		
+
 		/// <summary>
 		/// The path that the log file resides in.
 		/// Defaults to the application path.
 		/// </summary>
 		protected string Log_File_Path
 		{
-			set
-			{
-				this.Main_Log_File.Log_File_Path = value;
-			}
-			get
-			{
-				return this.Main_Log_File.Log_File_Path;
-			}
+			set { this._LogFile.Log_File_Path = value; }
+			get { return this._LogFile.Log_File_Path; }
 		}
-		
+
 		/// <summary>
 		/// If this is true we will echo any logged events < 2 to the console
 		/// </summary>
-		protected bool Log_File_To_Console
+		protected bool LogFileToConsole
 		{
-			set
-			{
-				this.Main_Log_File.Echo_To_Console = value;
-			}
-			get
-			{
-				return this.Main_Log_File.Echo_To_Console;
-			}
+			set { this._LogFile.EchoToConsole = value; }
+			get { return this._LogFile.EchoToConsole; }
 		}
 		#endregion
 
@@ -333,28 +290,28 @@ namespace Master_Log_File
 		/// </summary>
 		/// <param name="Log_Text">The text to be written.</param>
 		/// <param name="Log_Level">The numeric level of the log text.  In general, 0 is screen, 1 is both, 2 is file only.</param>
-		protected override void Write_To_Log( string Log_Text, int Log_Level )
+		protected override void WriteToLog( string pLogText, int pLogLevel )
 		{
-			Write_Log_Event_Args e = new Write_Log_Event_Args( Log_Text, Log_Level );
+			WriteLogEventArgs tmpArguments = new WriteLogEventArgs( pLogText, pLogLevel );
 
-			this.On_Write_Log ( e );
+			this.OnWriteLog ( tmpArguments );
 
 			//Write it to the textual log file if it is > 0
-			if ( e.Log_Level > 0 )
+			if ( tmpArguments.LogLevel > 0 )
 			{
-				this.Main_Log_File.Write_Log_File ( e.Log_Text );
+				this._LogFile.WriteLogFile ( tmpArguments.LogText );
 			}
 		}
 
-		protected override void Chained_Write_Log( object sender, Write_Log_Event_Args e )
+		protected override void ChainedWriteLog( object pSender, WriteLogEventArgs pArguments )
 		{
 			//A shim function to chain log events from objects here to the main application's events.
-			this.On_Write_Log( e );
+			this.OnWriteLog( pArguments );
 
 			//Write it to the textual log file if it is > 0
-			if ( e.Log_Level > 0 )
+			if ( pArguments.LogLevel > 0 )
 			{
-				this.Main_Log_File.Write_Log_File ( e.Log_Text );
+				this._LogFile.WriteLogFile ( pArguments.LogText );
 			}
 		}
 	}

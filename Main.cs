@@ -9,7 +9,7 @@ class MainClass
 	{
 		//Gdk.Threads.Init ();
 		Application.Init ();
-		new Mandela_Window ();
+		new MandelaWindow ();
 		Application.Run ();
 	}
 }

@@ -7,52 +7,46 @@
  */
 
 using System;
-using Master_Log_File;
-using Master_Time_Span;
-using Master_Data_Structure_Base;
+using MasterLogFile;
+using MasterTimeSpan;
+using MasterDataStructureBase;
 
-namespace Master_Data_Structure_Base
+namespace MasterDataStructureBase
 {
-	public class Linked_List_Base : Data_Structure_Base
+	public class LinkedListBase : DataStructureBase
 	{
 		// The list head and tail
-		protected List_Node List_Head;
-		protected List_Node List_Tail;
+		protected ListNode _Head;
+		protected ListNode _Tail;
 
 		#region Data Access Functions
 		public bool EOL
 		{
 			get
 			{
-				if ( (this.Node_Count > 0) && (this.Current_Node.Index == this.List_Tail.Index) )
-				{
+				if ( (this._NodeCount > 0) && (this.CurrentNode.Index == this._Tail.Index) )
 					return true;
-				}
 				else
-				{
 					return false;
-				}
 			}
 		}
 		#endregion
 
 		#region Linked List Navigation Functions
-		public bool Move_First ()
+		public bool MoveFirst ()
 		{
 			try
 			{
-				if ( Node_Count > 0 )
+				if ( _NodeCount > 0 )
 				{
 					//Set the current node to the list head
-					this.Current_Node = this.List_Head;
+					this.CurrentNode = this._Head;
 
 					//Update the statistics
-					this.Navigation_Count++;
+					this._NavigationCount++;
 
-					if ( this.Log_Navigation )
-					{
-						this.Write_To_Log ( "Nav: [Move First] in "+this.Count.ToString()+" items" );
-					}
+					if ( this._LogNavigation )
+						this.WriteToLog ( "Nav: [Move First] in "+this.Count.ToString()+" items" );
 
 					return true;
 				}
@@ -68,22 +62,20 @@ namespace Master_Data_Structure_Base
 			}
 		}
 
-		public bool Move_Previous ()
+		public bool MovePrevious ()
 		{
 			try
 			{
-				if ( (Node_Count > 0) && (this.Current_Node.Index != this.List_Head.Index) )
+				if ( (_NodeCount > 0) && (this.CurrentNode.Index != this._Head.Index) )
 				{
 					//Set the current node to the previous node
-					this.Current_Node = (this.Current_Node as List_Node).Previous_Node;
+					this.CurrentNode = (this.CurrentNode as ListNode).PreviousNode;
 
 					//Update the statistics
-					this.Navigation_Count++;
+					this._NavigationCount++;
 
-					if ( this.Log_Navigation )
-					{
-						this.Write_To_Log ( "Nav: [Move Previous] in "+this.Count.ToString()+" items" );
-					}
+					if ( this._LogNavigation )
+						this.WriteToLog ( "Nav: [Move Previous] in "+this.Count.ToString()+" items" );
 
 					return true;
 				}
@@ -99,22 +91,20 @@ namespace Master_Data_Structure_Base
 			}
 		}
 
-		public bool Move_Next ()
+		public bool MoveNext ()
 		{
 			try
 			{
-				if ( (Node_Count > 0) && (this.Current_Node.Index != this.List_Tail.Index) )
+				if ( (_NodeCount > 0) && (this.CurrentNode.Index != this._Tail.Index) )
 				{
 					//Set the current node to the next node in the list
-					this.Current_Node = (this.Current_Node as List_Node).Next_Node;
+					this.CurrentNode = (this.CurrentNode as ListNode).NextNode;
 
 					//Update the statistics
-					this.Navigation_Count++;
+					this._NavigationCount++;
 
-					if ( this.Log_Navigation )
-					{
-						this.Write_To_Log ( "Nav: [Move Next] in "+this.Count.ToString()+" items" );
-					}
+					if ( this._LogNavigation )
+						this.WriteToLog ( "Nav: [Move Next] in "+this.Count.ToString()+" items" );
 
 					return true;
 				}
@@ -130,22 +120,20 @@ namespace Master_Data_Structure_Base
 			}
 		}
 
-		public bool Move_Last ()
+		public bool MoveLast ()
 		{
 			try
 			{
-				if ( Node_Count > 0 )
+				if ( _NodeCount > 0 )
 				{
 					//Set the current node to the list tail
-					this.Current_Node = this.List_Tail;
+					this.CurrentNode = this._Tail;
 
 					//Update the statistics
-					this.Navigation_Count++;
+					this._NavigationCount++;
 
-					if ( this.Log_Navigation )
-					{
-						this.Write_To_Log ( "Nav: [Move Last] in "+this.Count.ToString()+" items" );
-					}
+					if ( this._LogNavigation )
+						this.WriteToLog ( "Nav: [Move Last] in "+this.Count.ToString()+" items" );
 
 					return true;
 				}
@@ -168,47 +156,47 @@ namespace Master_Data_Structure_Base
 		/// </summary>
 		/// <param name="Key_To_Search_For">The index # to find in the list</param>
 		/// <returns></returns>
-		public bool Find_First_By_Index ( long Index_To_Search_For )
+		public bool FindFirstByIndex ( long pIndexToSearchFor )
 		{
 			try
 			{
 				//Create the default match criteron (a key)
-				Node_Match Find_Key = new Node_Match ( Index_To_Search_For );
+				NodeMatch tmpSearchingNode = new NodeMatch ( pIndexToSearchFor );
 
 				//Now find it
-				return this.Find_First ( Find_Key );
+				return this.FindFirst ( tmpSearchingNode );
 			}
 			catch
 			{
-				this.Write_To_Log ( "Error finding key " + Index_To_Search_For.ToString() );
+				this.WriteToLog ( "Error finding key " + pIndexToSearchFor.ToString() );
 
 				return false;
 			}
 		}
 
-		public bool Find_First ( Node_Match Matching_Method )
+		public bool FindFirst ( NodeMatch pMatchMethod )
 		{
 			try
 			{
-				return this.Linear_Search_Forward_From_Beginning ( Matching_Method );
+				return this.LinearSearchForwardFromBeginning ( pMatchMethod );
 			}
 			catch
 			{
-				this.Write_To_Log ( "Error finding first item" );
+				this.WriteToLog ( "Error finding first item" );
 
 				return false;
 			}
 		}
 
-		public bool Find_Next ( Node_Match Matching_Method )
+		public bool FindNext ( NodeMatch pMatchMethod )
 		{
 			try
 			{
-				if ( (this.Node_Count > 1) && (!this.EOL) )
+				if ( (this._NodeCount > 1) && (!this.EOL) )
 				{
-					this.Move_Next();
+					this.MoveNext();
 
-					return this.Linear_Search_Forward( Matching_Method );
+					return this.LinearSearchForward( pMatchMethod );
 				}
 				else
 				{
@@ -217,7 +205,7 @@ namespace Master_Data_Structure_Base
 			}
 			catch
 			{
-				this.Write_To_Log ( "Error finding next item" );
+				this.WriteToLog ( "Error finding next item" );
 
 				return false;
 			}
@@ -228,90 +216,82 @@ namespace Master_Data_Structure_Base
 		/// </summary>
 		/// <param name="Matching_Method">A derivative of Node_Match that returns Match() as true on hits</param>
 		/// <returns>True if anything was found</returns>
-		public bool Linear_Search_Forward_From_Beginning ( Node_Match Matching_Method )
+		public bool LinearSearchForwardFromBeginning ( NodeMatch pMatchMethod )
 		{
-			bool Matched_Item = false;
+			bool tmpMatchFound = false;
 
 			try
 			{
-				if ( Node_Count > 0 )
+				if ( _NodeCount > 0 )
 				{
 					//Update the statistics
-					this.Search_Count++;
+					this._SearchCount++;
 
 					//First see if we are already at the matching node
-					if ( Matching_Method.Match( this.Current_Node ) )
+					if ( pMatchMethod.Match( this.CurrentNode ) )
 					{
-						this.Search_Match_Count++;
-						Matched_Item = true;
+						this._SearchMatchCount++;
+						tmpMatchFound = true;
 					}
 					else
 					{
 						//Set the current node to the list head
-						this.Move_First();
+						this.MoveFirst();
 
 						//Now search forward and see if there are any hits
-						Matched_Item = this.Linear_Search_Forward ( Matching_Method );
+						tmpMatchFound = this.LinearSearchForward ( pMatchMethod );
 					}
 				}
 			}
 			catch
 			{
-				this.Write_To_Log( "Error searching list of ("+this.Count.ToString()+") items" );
+				this.WriteToLog( "Error searching list of ("+this.Count.ToString()+") items" );
 			}
 
-			return Matched_Item;
+			return tmpMatchFound;
 		}
 
-		public bool Linear_Search_Forward ( Node_Match Matching_Method )
+		public bool LinearSearchForward ( NodeMatch pMatchMethod )
 		{
-			bool Matched_Item = false;
-			Time_Span Search_Timer = new Time_Span();
+			bool tmpMatchFound = false;
+			TimeSpanMetric tmpSearchTimer = new TimeSpanMetric();
 
-			if ( this.Log_Searches )
-			{
-				Search_Timer.Start();
-			}
+			if ( this._LogSearch )
+				tmpSearchTimer.Start();
 
 			try
 			{
 				if ( this.Count > 0 )
 				{
 					//Now walk through the list until we either find it or hit the end.
-					while ( ( !Matching_Method.Match( this.Current_Node ) ) && (!this.EOL) )
-					{
-						this.Move_Next();
-					}
+					while ( ( !pMatchMethod.Match( this.CurrentNode ) ) && (!this.EOL) )
+						this.MoveNext();
 
 					//See if we found it or not
-					if ( Matching_Method.Match( this.Current_Node ) )
+					if ( pMatchMethod.Match( this.CurrentNode ) )
 					{
-						this.Search_Match_Count++;
-						Matched_Item = true;
+						this._SearchMatchCount++;
+						tmpMatchFound = true;
 					}
 				}
 			}
 			catch
 			{
-				this.Write_To_Log( "Error during forward linear searching list of ("+this.Count.ToString()+") items" );
+				this.WriteToLog( "Error during forward linear searching list of ("+this.Count.ToString()+") items" );
 			}
 			finally
 			{
-				if ( this.Log_Searches )
+				if ( this._LogSearch )
 				{
-					Search_Timer.Time_Stamp();
-					if ( Matched_Item )
-					{
-						this.Write_To_Log( "Searched Forward in a list of ("+this.Count.ToString()+") items and found item #"+this.Current_Item_Key.ToString()+" taking "+Search_Timer.Time_Difference.ToString()+"ms." );
-					}
+					tmpSearchTimer.Time_Stamp();
+					if ( tmpMatchFound )
+						this.WriteToLog( "Searched Forward in a list of ("+this.Count.ToString()+") items and found item #"+this.CurrentNodeIndex.ToString()+" taking "+tmpSearchTimer.TimeDifference.ToString()+"ms." );
 					else
-					{
-						this.Write_To_Log( "Searched Forward in a list of ("+this.Count.ToString()+") items and did not get a match taking "+Search_Timer.Time_Difference.ToString()+"ms." );
-					}
+						this.WriteToLog( "Searched Forward in a list of ("+this.Count.ToString()+") items and did not get a match taking "+tmpSearchTimer.TimeDifference.ToString()+"ms." );
 				}
 			}
 
-			return Matched_Item;
+			return tmpMatchFound;
 		}
 		#endregion
 	}
@@ -319,26 +299,20 @@ namespace Master_Data_Structure_Base
 	/// <summary>
 	/// A linked list class; this will be inherited obviously.
 	/// </summary>
-	public class Linked_List : Linked_List_Base
+	public class LinkedList : LinkedListBase
 	{
 		/// <summary>
 		/// The current node.
 		/// In the full list it is writable and readable.
 		/// </summary>
-		public override Data_Node Current_Node
+		public override DataNode CurrentNode
 		{
-			get
-			{
-				return this.Internal_Current_Node;
-			}
-			set
-			{
-				this.Internal_Current_Node = value;
-			}
+			get { return this._CurrentNode; }
+			set { this._CurrentNode = value; }
 		}
 
 		// The class initializer
-		public Linked_List():base()
+		public LinkedList():base()
 		{
 			//Nothing needs to be done for a base linked list
 		}
@@ -349,40 +323,40 @@ namespace Master_Data_Structure_Base
 		/// It does magic number generation and stuff.
 		/// </summary>
 		/// <param name="Node_Data_Gram">An object to be the datagram in the node</param>
-		protected void Add_Node_To_List ( object Node_Data_Gram )
+		protected void AddNodeTolist ( object pNodeData )
 		{
 			// TODO: Later the add method style should be dynamic
 			//       i.e. Beginning would add new nodes to the top, End would be the bottom,
 			//            Before_Current before the Current_Node, After_Current after
-			List_Node Node_To_Add;
+			ListNode tmpNodeToAdd;
 
 			try
 			{
-				Node_To_Add = new List_Node( Node_Data_Gram );
+				tmpNodeToAdd = new ListNode( pNodeData );
 
 				if ( this.Count > 0 )
 				{
 					//Add it to the end of the list
-					this.Add_Node_After ( Node_To_Add, this.List_Tail );
+					this.AddNodeAfter ( tmpNodeToAdd, this._Tail );
 				}
 				else
 				{
 					//Add it to an empty list
-					this.Add_First_Node ( Node_To_Add );
+					this.AddFirstNode ( tmpNodeToAdd );
 				}
 
-				this.Node_Count++;
+				this._NodeCount++;
 
 				// We handle the key on inserts, as well.
-				this.Last_Given_Key++;
-				Node_To_Add.Index = this.Last_Given_Key;
+				this._LastGivenIndex++;
+				tmpNodeToAdd.Index = this._LastGivenIndex;
 
 				// Update the statistics
-				this.Add_Count++;
+				this._AddCount++;
 			}
 			catch
 			{
-				this.Write_To_Log( "Error adding a node to the list during the decision tree phase." );
+				this.WriteToLog( "Error adding a node to the list during the decision tree phase." );
 			}
 		}
 
@@ -390,25 +364,23 @@ namespace Master_Data_Structure_Base
 		/// Add a node to an empty list
 		/// </summary>
 		/// <param name="Node_To_Add">The node to add to the list</param>
-		protected void Add_First_Node ( List_Node Node_To_Add )
+		protected void AddFirstNode ( ListNode pNodeToAdd )
 		{
 			try
 			{
 				// Add a node to the list of no nodes.
 				if ( this.Count == 0 )
 				{
-					this.List_Head = Node_To_Add;
-					this.Current_Node = Node_To_Add;
-					this.List_Tail = Node_To_Add;
-					if ( this.Log_Adds )
-					{
-						this.Write_To_Log( "Added node # "+Node_To_Add.Index.ToString()+" successfully to the empty list." );
-					}
+					this._Head = pNodeToAdd;
+					this.CurrentNode = pNodeToAdd;
+					this._Tail = pNodeToAdd;
+					if ( this._LogAdd )
+						this.WriteToLog( "Added node # "+pNodeToAdd.Index.ToString()+" successfully to the empty list." );
 				}
 			}
 			catch
 			{
-				this.Write_To_Log( "Error adding the first node to the list." );
+				this.WriteToLog( "Error adding the first node to the list." );
 			}
 		}
 
@@ -417,38 +389,36 @@ namespace Master_Data_Structure_Base
 		/// </summary>
 		/// <param name="Node_To_Add">The node to add to the list</param>
 		/// <param name="Reference_Point">The node after which this node is to come</param>
-		protected void Add_Node_After ( List_Node Node_To_Add, List_Node Reference_Point )
+		protected void AddNodeAfter ( ListNode pNodeToAdd, ListNode pReferenceNode )
 		{
 			try
 			{
-				if ( Reference_Point.Index != this.List_Tail.Index )
+				if ( pReferenceNode.Index != this._Tail.Index )
 				{
 					//This is being inserted after a normal node
-					Node_To_Add.Previous_Node = Reference_Point;
-					Node_To_Add.Next_Node = Reference_Point.Next_Node;
+					pNodeToAdd.PreviousNode = pReferenceNode;
+					pNodeToAdd.NextNode = pReferenceNode.NextNode;
 
-					Reference_Point.Next_Node = Node_To_Add;
+					pReferenceNode.NextNode = pNodeToAdd;
 
-					Node_To_Add.Next_Node.Previous_Node = Node_To_Add;
+					pNodeToAdd.NextNode.PreviousNode = pNodeToAdd;
 				}
 				else
 				{
 					//This is coming after the list tail
-					Node_To_Add.Previous_Node = Reference_Point;
+					pNodeToAdd.PreviousNode = pReferenceNode;
 
-					Reference_Point.Next_Node = Node_To_Add;
+					pReferenceNode.NextNode = pNodeToAdd;
 
-					this.List_Tail = Node_To_Add;
+					this._Tail = pNodeToAdd;
 				}
 
-				if ( this.Log_Adds )
-				{
-					this.Write_To_Log( "Added node # "+Node_To_Add.Index.ToString()+" after node # "+Reference_Point.Index.ToString()+"." );
-				}
+				if ( this._LogAdd )
+					this.WriteToLog( "Added node # "+pNodeToAdd.Index.ToString()+" after node # "+pReferenceNode.Index.ToString()+"." );
 			}
 			catch
 			{
-				this.Write_To_Log( "Error adding node #"+Node_To_Add.Index+" after Node #"+Reference_Point.Index+"." );
+				this.WriteToLog( "Error adding node #"+pNodeToAdd.Index+" after Node #"+pReferenceNode.Index+"." );
 			}
 		}
 
@@ -457,38 +427,38 @@ namespace Master_Data_Structure_Base
 		/// </summary>
 		/// <param name="Node_To_Add">The node to add to the list</param>
 		/// <param name="Reference_Point">The node before which this node is to come</param>
-		protected void Add_Node_Before ( List_Node Node_To_Add, List_Node Reference_Point )
+		protected void AddNodeBefore ( ListNode pNodeToAdd, ListNode pReferenceNode )
 		{
 			try
 			{
-				if ( Reference_Point.Index != this.List_Head.Index )
+				if ( pReferenceNode.Index != this._Head.Index )
 				{
 					//This is being inserted after a normal node
-					Node_To_Add.Next_Node = Reference_Point;
-					Node_To_Add.Previous_Node = Reference_Point.Previous_Node;
+					pNodeToAdd.NextNode = pReferenceNode;
+					pNodeToAdd.PreviousNode = pReferenceNode.PreviousNode;
 
-					Reference_Point.Previous_Node = Node_To_Add;
+					pReferenceNode.PreviousNode = pNodeToAdd;
 
-					Node_To_Add.Previous_Node.Next_Node = Node_To_Add;
+					pNodeToAdd.PreviousNode.NextNode = pNodeToAdd;
 				}
 				else
 				{
 					//This is coming before the list head
-					Node_To_Add.Next_Node = Reference_Point;
+					pNodeToAdd.NextNode = pReferenceNode;
 
-					Reference_Point.Previous_Node = Node_To_Add;
+					pReferenceNode.PreviousNode = pNodeToAdd;
 
-					this.List_Head = Node_To_Add;
+					this._Head = pNodeToAdd;
 				}
 
-				if ( this.Log_Adds )
+				if ( this._LogAdd )
 				{
-					this.Write_To_Log( "Added node # "+Node_To_Add.Index.ToString()+" before node # "+Reference_Point.Index.ToString()+"." );
+					this.WriteToLog( "Added node # "+pNodeToAdd.Index.ToString()+" before node # "+pReferenceNode.Index.ToString()+"." );
 				}
 			}
 			catch
 			{
-				this.Write_To_Log( "Error adding node #"+Node_To_Add.Index+" after Node #"+Reference_Point.Index+"." );
+				this.WriteToLog( "Error adding node #"+pNodeToAdd.Index+" after Node #"+pReferenceNode.Index+"." );
 			}
 		}
 		#endregion
@@ -497,40 +467,28 @@ namespace Master_Data_Structure_Base
 	/// <summary>
 	/// The linked list node.
 	/// </summary>
-	public class List_Node : Data_Node
+	public class ListNode : DataNode
     {
 		//The next and previous node
-        private List_Node Next_List_Node;
-        private List_Node Previous_List_Node;
+		private ListNode _NextNode;
+		private ListNode _PreviousNode;
 
-        public List_Node ( object New_Data_Gram ):base(New_Data_Gram)
+        public ListNode ( object pNodeData ):base(pNodeData)
         {
         	//This is just a pass-through
         }
 
         #region List Node Data Access Functions
-        public List_Node Next_Node
+        public ListNode NextNode
         {
-        	get
-        	{
-        		return this.Next_List_Node;
-        	}
-			set
-			{
-				this.Next_List_Node = value;
-			}
+        	get { return this._NextNode; }
+			set { this._NextNode = value; }
         }
 
-        public List_Node Previous_Node
+        public ListNode PreviousNode
         {
-        	get
-        	{
-        		return this.Previous_List_Node;
-        	}
-        	set
-        	{
-        		this.Previous_List_Node = value;
-        	}
+        	get { return this._PreviousNode; }
+        	set { this._PreviousNode = value; }
         }
         #endregion
     }

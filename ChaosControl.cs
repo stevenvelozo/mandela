@@ -1,165 +1,165 @@
 using System;
 using Gtk;
-using Master_Super_Image;
-using Master_Time_Span;
-using Master_Log_File;
+using MasterSuperImage;
+using MasterTimeSpan;
+using MasterLogFile;
 
-namespace Master_Chaos_Display
+namespace MasterChaosDisplay
 {
 	// Todo: Create some exposed methods for the UI to use such as zoom in, out, etc.
 	// Todo: Make some event handlers for the engine list specifically to keep everything in tune with the current engine.
 	// Todo: Set up a method to zoom out.
-	class Chaos_Display : Pass_Through_Logged_Class
+	class ChaosDisplay : PassThroughLoggedClass
 	{
 		//The GTK Widget for capturing mouse input and such.
-		private EventBox Chaos_Display_Box;
+		private EventBox _ChaosDisplayBox;
 
 		//The Rendering Machine for the main output display
-		private Chaos_Rendering_Machine Output_Display_Machine;
+		private ChaosRenderingMachine _OutputChaosRenderingMachine;
 
 		//The Render Method to tie the Engine to the Machine
-		private Chaos_Renderer Render_Method;
+		private ChaosRenderer _ChaosRenderer;
 
 		//The list of engines
-		private Chaos_Engine_List Chaos_Output_Engine_List;
+		private ChaosEngineList _ChaosEngineList;
 
 		//This is true while the mouse is down!
-		private bool Mouse_Button_Down;
+		private bool _MouseButtonIsDown;
 
 		//This sets up the zoom factor for a click.
 		//It should be changable with the mouse wheel (1.0 is same size and minimum, 2.0 is 1/2, 3.0 is 1/3, etc -- maximum is 200)
-		private double Zoom_Factor;
+		private double _ZoomFactor;
 
-		public Chaos_Display( int Display_Width, int Display_Height )
+		public ChaosDisplay( int pDisplayWidth, int pDisplayHeight )
 		{
 			//Create a gradient of Dark Grey to White for our colors to start out.
-			Super_Color Infinite_Color, Gradient_Start_Color, Gradient_End_Color;
+			SuperColor tmpInfiniteColor, tmpGradientStartColor, tmpGradientEndColor;
 
-			Infinite_Color = new Super_Color( 0, 0, 0 );
+			tmpInfiniteColor = new SuperColor( 0, 0, 0 );
 
-			Gradient_Start_Color = new Super_Color( 75, 0, 40 );
-			Gradient_End_Color = new Super_Color( 0, 202, 243 );
+			tmpGradientStartColor = new SuperColor( 75, 0, 40 );
+			tmpGradientEndColor = new SuperColor( 0, 202, 243 );
 
 			//Instantiate the display box and the event handler for it.
-			this.Chaos_Display_Box = new EventBox();
-			this.Chaos_Display_Box.ButtonPressEvent += new ButtonPressEventHandler ( this.Chaos_Display_Click_Event );
-			this.Chaos_Display_Box.ButtonReleaseEvent += new ButtonReleaseEventHandler ( this.Chaos_Display_Click_Release );
-			this.Chaos_Display_Box.MotionNotifyEvent += new MotionNotifyEventHandler ( this.Chaos_Display_Mouse_Motion );
-			this.Chaos_Display_Box.ScrollEvent += new ScrollEventHandler ( this.Chaos_Display_Mouse_Scrolled );
+			this._ChaosDisplayBox = new EventBox();
+			this._ChaosDisplayBox.ButtonPressEvent += new ButtonPressEventHandler ( this.ChaosDisplayClickEvent );
+			this._ChaosDisplayBox.ButtonReleaseEvent += new ButtonReleaseEventHandler ( this.ChaosDisplayClickReleaseEvent );
+			this._ChaosDisplayBox.MotionNotifyEvent += new MotionNotifyEventHandler ( this.ChaosDisplayMouseMotionEvent );
+			this._ChaosDisplayBox.ScrollEvent += new ScrollEventHandler ( this.ChaosDisplayMouseScrolledEvent );
 
 			//The ubiquitous main view.
-			this.Output_Display_Machine = new Chaos_Rendering_Machine("MainView", Display_Width, Display_Height, Infinite_Color, Gradient_Start_Color, Gradient_End_Color, 500 );
-			this.Output_Display_Machine.Write_Log += new Write_Log_Event_Handler ( this.Chained_Machine_Write_Log );
+			this._OutputChaosRenderingMachine = new ChaosRenderingMachine("MainView", pDisplayWidth, pDisplayHeight, tmpInfiniteColor, tmpGradientStartColor, tmpGradientEndColor, 500 );
+			this._OutputChaosRenderingMachine.WriteLog += new WriteLogEventHandler ( this.ChainedMachineWriteLog );
 
 			//Create a chaos engine list
-			this.Chaos_Output_Engine_List = new Chaos_Engine_List();
+			this._ChaosEngineList = new ChaosEngineList();
 
-			this.Instantiate_Engines();
+			this.InstantiateEngines();
 
 			//The rendering method
 			//Hook up the output machine and the engine with the renderer
-			this.Render_Method = new Chaos_Renderer ( this.Output_Display_Machine, this.Chaos_Output_Engine_List.Engine );
-			this.Render_Method.Refresh_Display += new EventHandler ( Render_Update_Display_Event );
-			this.Render_Method.Write_Log += new Write_Log_Event_Handler ( Chained_Renderer_Write_Log );
+			this._ChaosRenderer = new ChaosRenderer ( this._OutputChaosRenderingMachine, this._ChaosEngineList.Engine );
+			this._ChaosRenderer.RefreshDisplay += new EventHandler ( RenderUpdateDisplayEvent );
+			this._ChaosRenderer.WriteLog += new WriteLogEventHandler ( ChainedRendererWriteLog );
 
-			this.Reset_Rendering_Machine();
+			this.ResetRenderingMachines();
 		}
 
-		private void Instantiate_Engines()
+		private void InstantiateEngines()
 		{
-			Chaos_Engine tmp_Chaos_Engine;
+			ChaosEngine tmpChaosEngine;
 
-			tmp_Chaos_Engine = new Mandelbrot_Engine();
-			tmp_Chaos_Engine.Write_Log += new Write_Log_Event_Handler ( this.Chained_Engine_Write_Log );
-			this.Chaos_Output_Engine_List.Add_Engine( tmp_Chaos_Engine.Name, tmp_Chaos_Engine );
+			tmpChaosEngine = new Mandelbrot_Engine();
+			tmpChaosEngine.WriteLog += new WriteLogEventHandler ( this.ChainedEngineWriteLog );
+			this._ChaosEngineList.AddEngine( tmpChaosEngine.Name, tmpChaosEngine );
 
-			tmp_Chaos_Engine = new Julia_Engine();
-			tmp_Chaos_Engine.Write_Log += new Write_Log_Event_Handler ( this.Chained_Engine_Write_Log );
-			this.Chaos_Output_Engine_List.Add_Engine( tmp_Chaos_Engine.Name, tmp_Chaos_Engine );
+			tmpChaosEngine = new Julia_Engine();
+			tmpChaosEngine.WriteLog += new WriteLogEventHandler ( this.ChainedEngineWriteLog );
+			this._ChaosEngineList.AddEngine( tmpChaosEngine.Name, tmpChaosEngine );
 
-			tmp_Chaos_Engine = new Grid_Test_Engine();
-			tmp_Chaos_Engine.Write_Log += new Write_Log_Event_Handler ( this.Chained_Engine_Write_Log );
-			this.Chaos_Output_Engine_List.Add_Engine( tmp_Chaos_Engine.Name, tmp_Chaos_Engine );
+			tmpChaosEngine = new Grid_Test_Engine();
+			tmpChaosEngine.WriteLog += new WriteLogEventHandler ( this.ChainedEngineWriteLog );
+			this._ChaosEngineList.AddEngine( tmpChaosEngine.Name, tmpChaosEngine );
 
-			tmp_Chaos_Engine = new Chaos_Engine();
-			tmp_Chaos_Engine.Write_Log += new Write_Log_Event_Handler ( this.Chained_Engine_Write_Log );
-			this.Chaos_Output_Engine_List.Add_Engine( tmp_Chaos_Engine.Name, tmp_Chaos_Engine );
+			tmpChaosEngine = new ChaosEngine();
+			tmpChaosEngine.WriteLog += new WriteLogEventHandler ( this.ChainedEngineWriteLog );
+			this._ChaosEngineList.AddEngine( tmpChaosEngine.Name, tmpChaosEngine );
 
-			this.Chaos_Output_Engine_List.Move_First();
+			this._ChaosEngineList.MoveFirst();
 		}
 
 		public void Render()
 		{
 			//This actually spawns a thread but uses safe message passing to gtk for progress bars etc.
-			if ( !this.Render_Method.Rendering )
-				this.Render_Method.Render();
+			if ( !this._ChaosRenderer.Rendering )
+				this._ChaosRenderer.Render();
 		}
 
-		public void Reset_Rendering_Machine()
+		public void ResetRenderingMachines()
 		{
-			this.Mouse_Button_Down = false;
+			this._MouseButtonIsDown = false;
 
 			//In case someone starts refactoring the zoom factor without clicking, default to the center.
-			this.Output_Display_Machine.Zoom_Centerpoint_X = (int)(this.Output_Display_Machine.Width / 2);
-			this.Output_Display_Machine.Zoom_Centerpoint_Y = (int)(this.Output_Display_Machine.Height / 2);;
+			this._OutputChaosRenderingMachine._ZoomCenterpointX = (int)(this._OutputChaosRenderingMachine.Width / 2);
+			this._OutputChaosRenderingMachine._ZoomCenterpointY = (int)(this._OutputChaosRenderingMachine.Height / 2);;
 
-			this.Zoom_Factor = 4.0;
+			this._ZoomFactor = 4.0;
 		}
 
-		void Render_Update_Display_Event (object Sender, EventArgs Arguments )
+		void RenderUpdateDisplayEvent (object pSender, EventArgs pArguments )
 		{
-			this.Output_Display_Machine.Refresh();
+			this._OutputChaosRenderingMachine.Refresh();
 		}
 
-		void Chaos_Display_Refactor_Zoom ( int X_Centerpoint, int Y_Centerpoint )
+		void ChaosDisplayRefactorZoom ( int pMidpointX, int pMidpointY )
 		{
-			double Chaos_X_Center, Chaos_Y_Center, tmpCoordinate;
+			double tmpXCenter, tmpYCenter, tmpCoordinate;
 
 			//Fairly elegant.
 			//Compute the Cartesian centerpoint
-			Chaos_X_Center = this.Output_Display_Machine.Last_X_Origin + (X_Centerpoint * this.Output_Display_Machine.Last_X_Ratio);
-			Chaos_Y_Center = this.Output_Display_Machine.Last_Y_Origin + (Y_Centerpoint * this.Output_Display_Machine.Last_Y_Ratio);
+			tmpXCenter = this._OutputChaosRenderingMachine.LastXOrigin + (pMidpointX * this._OutputChaosRenderingMachine.LastXRatio);
+			tmpYCenter = this._OutputChaosRenderingMachine.LastYOrigin + (pMidpointY * this._OutputChaosRenderingMachine.LastYRatio);
 
 			//Save the last clicked centerpoint for things like interdependant chaos renderers
-			this.Output_Display_Machine.Last_Clicked_X_Centerpoint = Chaos_X_Center;
-			this.Output_Display_Machine.Last_Clicked_Y_Centerpoint = Chaos_Y_Center;
+			this._OutputChaosRenderingMachine.LastClickedXCenterpoint = tmpXCenter;
+			this._OutputChaosRenderingMachine.LastClickedYCenterpoint = tmpYCenter;
 
 			//Also save the top left point and width/height of the box
-			this.Output_Display_Machine.Zoom_Centerpoint_X = X_Centerpoint;
-			this.Output_Display_Machine.Zoom_Centerpoint_Y = Y_Centerpoint;
+			this._OutputChaosRenderingMachine._ZoomCenterpointX = pMidpointX;
+			this._OutputChaosRenderingMachine._ZoomCenterpointY = pMidpointY;
 
-			this.Output_Display_Machine.Zoom_Width = (int)(this.Output_Display_Machine.Width / this.Zoom_Factor);
-			this.Output_Display_Machine.Zoom_Height = (int)(this.Output_Display_Machine.Height / this.Zoom_Factor);
+			this._OutputChaosRenderingMachine._ZoomWidth = (int)(this._OutputChaosRenderingMachine.Width / this._ZoomFactor);
+			this._OutputChaosRenderingMachine._ZoomHeight = (int)(this._OutputChaosRenderingMachine.Height / this._ZoomFactor);
 
-			this.Output_Display_Machine.Zoom_Top_Left_X = X_Centerpoint - (int)(this.Output_Display_Machine.Zoom_Width / 2);
-			this.Output_Display_Machine.Zoom_Top_Left_Y = Y_Centerpoint - (int)(this.Output_Display_Machine.Zoom_Height / 2);
+			this._OutputChaosRenderingMachine._ZoomTopLeftX = pMidpointX - (int)(this._OutputChaosRenderingMachine._ZoomWidth / 2);
+			this._OutputChaosRenderingMachine._ZoomTopLeftY = pMidpointY - (int)(this._OutputChaosRenderingMachine._ZoomHeight / 2);
 
-			this.Output_Display_Machine.Selection_Set();
+			this._OutputChaosRenderingMachine.SelectionSet();
 
-			tmpCoordinate = Chaos_X_Center - ((this.Output_Display_Machine.Zoom_Width / 2) * this.Output_Display_Machine.Last_X_Ratio);
-			this.Chaos_Output_Engine_List.Engine.Set_Parameter( "XMin", tmpCoordinate.ToString() );
+			tmpCoordinate = tmpXCenter - ((this._OutputChaosRenderingMachine._ZoomWidth / 2) * this._OutputChaosRenderingMachine.LastXRatio);
+			this._ChaosEngineList.Engine.SetParameter( "XMin", tmpCoordinate.ToString() );
 
-			tmpCoordinate = Chaos_X_Center + ((this.Output_Display_Machine.Zoom_Width / 2) * this.Output_Display_Machine.Last_X_Ratio);
-			this.Chaos_Output_Engine_List.Engine.Set_Parameter( "XMax", tmpCoordinate.ToString() );
+			tmpCoordinate = tmpXCenter + ((this._OutputChaosRenderingMachine._ZoomWidth / 2) * this._OutputChaosRenderingMachine.LastXRatio);
+			this._ChaosEngineList.Engine.SetParameter( "XMax", tmpCoordinate.ToString() );
 
 			//Ignoring Y ratio to keep the aspect ratio proper for now.
-			tmpCoordinate = Chaos_Y_Center - ((this.Output_Display_Machine.Zoom_Height / 2) * this.Output_Display_Machine.Last_X_Ratio);
-			this.Chaos_Output_Engine_List.Engine.Set_Parameter( "YMin", tmpCoordinate.ToString() );
-			tmpCoordinate = Chaos_Y_Center + ((this.Output_Display_Machine.Zoom_Height / 2) * this.Output_Display_Machine.Last_X_Ratio);
-			this.Chaos_Output_Engine_List.Engine.Set_Parameter( "YMax", tmpCoordinate.ToString() );
+			tmpCoordinate = tmpYCenter - ((this._OutputChaosRenderingMachine._ZoomHeight / 2) * this._OutputChaosRenderingMachine.LastXRatio);
+			this._ChaosEngineList.Engine.SetParameter( "YMin", tmpCoordinate.ToString() );
+			tmpCoordinate = tmpYCenter + ((this._OutputChaosRenderingMachine._ZoomHeight / 2) * this._OutputChaosRenderingMachine.LastXRatio);
+			this._ChaosEngineList.Engine.SetParameter( "YMax", tmpCoordinate.ToString() );
 
 			//this.Write_To_Log ("ZoomSet: Screen["+X_Centerpoint.ToString()+","+Y_Centerpoint.ToString()+"] Cartesian["+Chaos_X_Center.ToString()+","+Chaos_Y_Center.ToString()+"] Factor[1/"+this.Zoom_Factor.ToString()+"]");
 		}
 
 		#region Chaos Render Event
-		public event EventHandler Render_Chaos_Image;
+		public event EventHandler RenderChaosImage;
 
 		//Safely call the "Render" event
-		public bool Render_Chaos_Image_Safe()
+		public bool RenderChaosImageSafe()
 		{
-			EventArgs e = new EventArgs();
+			EventArgs tmpArguments = new EventArgs();
 
-			this.Render_Chaos_Image( this, e );
+			this.RenderChaosImage( this, tmpArguments );
 
 			return false;
 		}
@@ -167,80 +167,74 @@ namespace Master_Chaos_Display
 
 
 		#region Mouse Event Handling
-		void Chaos_Display_Mouse_Scrolled ( object Sender, ScrollEventArgs Arguments )
+		void ChaosDisplayMouseScrolledEvent ( object pSender, ScrollEventArgs pArguments )
 		{
 			//Todo: alter this to scale based on size, but probably on a linear ramp.
 			if ( !this.Rendering )
 			{
-				Gdk.EventScroll EventInfo = Arguments.Event;
+				Gdk.EventScroll tmpEventInfo = pArguments.Event;
 
-				switch (EventInfo.Direction)
+				switch (tmpEventInfo.Direction)
 				{
 					case Gdk.ScrollDirection.Up:
-						this.Zoom_Factor = Math.Min( this.Zoom_Factor+0.25, 100.0 );
+						this._ZoomFactor = Math.Min( this._ZoomFactor+0.25, 100.0 );
 						//this.Write_To_Log ( "Zooming In To 1/"+this.Zoom_Factor.ToString() );
-						this.Chaos_Display_Refactor_Zoom( this.Output_Display_Machine.Zoom_Centerpoint_X, this.Output_Display_Machine.Zoom_Centerpoint_Y );
+						this.ChaosDisplayRefactorZoom( this._OutputChaosRenderingMachine._ZoomCenterpointX, this._OutputChaosRenderingMachine._ZoomCenterpointY );
 						break;
 
 					case Gdk.ScrollDirection.Down:
-						this.Zoom_Factor = Math.Max( this.Zoom_Factor-0.25, 1.0 );
+						this._ZoomFactor = Math.Max( this._ZoomFactor-0.25, 1.0 );
 						//this.Write_To_Log ( "Zooming Out To 1/"+this.Zoom_Factor.ToString() );
-						this.Chaos_Display_Refactor_Zoom( this.Output_Display_Machine.Zoom_Centerpoint_X, this.Output_Display_Machine.Zoom_Centerpoint_Y );
+						this.ChaosDisplayRefactorZoom( this._OutputChaosRenderingMachine._ZoomCenterpointX, this._OutputChaosRenderingMachine._ZoomCenterpointY );
 						break;
 				}
 			}
 
-			Arguments.RetVal = true;
+			pArguments.RetVal = true;
 		}
 
-		void Chaos_Display_Click_Event (object Sender, ButtonPressEventArgs Arguments)
+		void ChaosDisplayClickEvent (object pSender, ButtonPressEventArgs pArguments)
 		{
 			if ( !this.Rendering )
 			{
-				Gdk.EventButton EventInfo = Arguments.Event;
+				Gdk.EventButton tmpEventInfo = pArguments.Event;
 
-				if ( (EventInfo.Button == 1) || (EventInfo.Button == 2) )
+				if ( (tmpEventInfo.Button == 1) || (tmpEventInfo.Button == 2) )
 				{
-					this.Chaos_Display_Refactor_Zoom ( (int)EventInfo.X, (int)EventInfo.Y );
+					this.ChaosDisplayRefactorZoom ( (int)tmpEventInfo.X, (int)tmpEventInfo.Y );
 
-					this.Mouse_Button_Down = true;
+					this._MouseButtonIsDown = true;
 				}
 
-				if ( (EventInfo.Button == 2) || (EventInfo.Button == 3) )
-				{
+				if ( (tmpEventInfo.Button == 2) || (tmpEventInfo.Button == 3) )
 					//Generate an event to render the image
-					this.Render_Chaos_Image_Safe();
-				}
+					this.RenderChaosImageSafe();
 			}
 
-			Arguments.RetVal = true;
+			pArguments.RetVal = true;
 		}
 
-		void Chaos_Display_Mouse_Motion (object Sender, MotionNotifyEventArgs Arguments)
+		void ChaosDisplayMouseMotionEvent (object pSender, MotionNotifyEventArgs pArguments)
 		{
 			if ( !this.Rendering )
 			{
-				if ( this.Mouse_Button_Down )
+				if ( this._MouseButtonIsDown )
 				{
-					Gdk.EventMotion EventInfo = Arguments.Event;
+					Gdk.EventMotion EventInfo = pArguments.Event;
 
-					if ( (this.Output_Display_Machine.Zoom_Centerpoint_X != (int)EventInfo.X) || (this.Output_Display_Machine.Zoom_Centerpoint_Y != (int)EventInfo.Y) )
-					{
-						this.Chaos_Display_Refactor_Zoom ( (int)EventInfo.X, (int)EventInfo.Y );
-					}
+					if ( (this._OutputChaosRenderingMachine._ZoomCenterpointX != (int)EventInfo.X) || (this._OutputChaosRenderingMachine._ZoomCenterpointY != (int)EventInfo.Y) )
+						this.ChaosDisplayRefactorZoom ( (int)EventInfo.X, (int)EventInfo.Y );
 				}
 			}
 
-			Arguments.RetVal = true;
+			pArguments.RetVal = true;
 		}
 
-		void Chaos_Display_Click_Release (object Sender, ButtonReleaseEventArgs Arguments)
+		void ChaosDisplayClickReleaseEvent (object Sender, ButtonReleaseEventArgs Arguments)
 		{
 			if ( !this.Rendering )
-			{
 				//this.Write_To_Log ("Mouse Released");
-				this.Mouse_Button_Down = false;
-			}
+				this._MouseButtonIsDown = false;
 
 			Arguments.RetVal = true;
 		}
@@ -249,84 +243,72 @@ namespace Master_Chaos_Display
 		#region Data Access and Control
 		public bool Rendering
 		{
-			get
-			{
-				return this.Render_Method.Rendering;
-			}
+			get { return this._ChaosRenderer.Rendering; }
 		}
 
 		public double Progress
 		{
-			get
-			{
-				return this.Render_Method.Progress;
-			}
+			get { return this._ChaosRenderer.Progress; }
 		}
 
-		public int Render_Quality
+		public int RenderQuality
 		{
-			set
-			{
-				this.Render_Method.Render_Quality = value;
-			}
+			set { this._ChaosRenderer.RenderQuality = value; }
 		}
 
-		public bool Render_Visual
+		public bool RenderVisual
 		{
-			set
-			{
-				this.Render_Method.Render_Visual = value;
-			}
+			set { this._ChaosRenderer.RenderVisual = value; }
 		}
 
 		public Widget Display
 		{
 			get
 			{
-				VBox Chaos_Boundary = new VBox();
+				VBox tmpChaosBoundary = new VBox();
 
-				this.Chaos_Display_Box.Add( this.Output_Display_Machine.Image );
+				this._ChaosDisplayBox.Add( this._OutputChaosRenderingMachine.Image );
 
-				Chaos_Boundary.PackStart(this.Chaos_Display_Box, false, false, 0);
+				tmpChaosBoundary.PackStart(this._ChaosDisplayBox, false, false, 0);
 
-				return Chaos_Boundary;
+				return tmpChaosBoundary;
 			}
 		}
 
-		public void Set_Engine ( string Engine_Name )
+		public void SetEngine ( string pEngineName )
 		{
-			this.Chaos_Output_Engine_List.Find_First_By_Name ( Engine_Name );
+			this._ChaosEngineList.FindFirstByName ( pEngineName );
 
-			this.Render_Method.Engine = this.Chaos_Output_Engine_List.Engine;
+			this._ChaosRenderer.Engine = this._ChaosEngineList.Engine;
 
-			this.Reset_Rendering_Machine();
+			this.ResetRenderingMachines();
 		}
 
-		public void Hide_Selection ()
+		public void HideSelection ()
 		{
-			this.Output_Display_Machine.Hide_Selection();
+			this._OutputChaosRenderingMachine.HideSelection();
 		}
 
-		public void Show_Selection ()
+		public void ShowSelection ()
 		{
-			this.Chaos_Display_Refactor_Zoom( this.Output_Display_Machine.Zoom_Centerpoint_X, this.Output_Display_Machine.Zoom_Centerpoint_Y );
+			this.ChaosDisplayRefactorZoom( this._OutputChaosRenderingMachine._ZoomCenterpointX, this._OutputChaosRenderingMachine._ZoomCenterpointY );
 		}
 		#endregion
 
 		#region Chained Log Events
-		protected void Chained_Engine_Write_Log( object sender, Write_Log_Event_Args e )
+		protected void ChainedEngineWriteLog( object pSender, WriteLogEventArgs pArguments )
 		{
-			this.Write_To_Log ( "Engine " + (sender as Chaos_Engine).Name+":"+e.Log_Text );
+			this.WriteToLog ( "Engine " + (pSender as ChaosEngine).Name+":"+pArguments.LogText );
 		}
 
-		protected void Chained_Machine_Write_Log( object sender, Write_Log_Event_Args e )
+		protected void ChainedMachineWriteLog( object pSender, WriteLogEventArgs pArguments )
 		{
-			this.Write_To_Log ( "Machine : "+e.Log_Text );
+			this.WriteToLog ( "Machine : "+pArguments.LogText );
 		}
 
-		protected void Chained_Renderer_Write_Log( object sender, Write_Log_Event_Args e )
+		protected void ChainedRendererWriteLog( object pSender, WriteLogEventArgs pArguments )
 		{
-			this.Write_To_Log ( "Renderer : "+e.Log_Text );
+			this.WriteToLog ( "Renderer : "+pArguments.LogText );
 		}
 		#endregion
 	}

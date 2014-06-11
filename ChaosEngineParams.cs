@@ -1,46 +1,41 @@
 using System.Text.RegularExpressions;
-using Master_Data_Structure_Base;
+using MasterDataStructureBase;
 
-namespace Master_Chaos_Display
+namespace MasterChaosDisplay
 {
-	class Chaos_Engine_Parameter_List : Linked_List
+	class ChaosEngineParameterList : LinkedList
 	{
-		public bool Add_Parameter ( string Parameter_Internal_Name, string Parameter_Name, string Parameter_Description,
-									string Parameter_Tooltip, string Parameter_Type, string Parameter_Default_Value )
+		public bool AddParameter ( string pParameterKey, string pName, string pDescription, string pTooltip, string pType, string pDefaultValue )
 		{
-			Chaos_Engine_Parameter New_Engine_Parameter;
+			Chaos_Engine_Parameter tmpChaosEngineParameter;
 
-			New_Engine_Parameter = new Chaos_Engine_Parameter ( Parameter_Internal_Name );
+			tmpChaosEngineParameter = new Chaos_Engine_Parameter ( pParameterKey );
 
-			New_Engine_Parameter.Parameter_Name = Parameter_Name;
-			New_Engine_Parameter.Parameter_Description = Parameter_Description;
-			New_Engine_Parameter.Parameter_Tooltip = Parameter_Tooltip;
-			New_Engine_Parameter.Parameter_Type = Parameter_Type;
-			New_Engine_Parameter.Parameter_Value = Parameter_Default_Value;
-			New_Engine_Parameter.Parameter_Default_Value = Parameter_Default_Value;
+			tmpChaosEngineParameter.Name = pName;
+			tmpChaosEngineParameter.Description = pDescription;
+			tmpChaosEngineParameter.Tooltip = pTooltip;
+			tmpChaosEngineParameter.Type = pType;
+			tmpChaosEngineParameter.Value = pDefaultValue;
+			tmpChaosEngineParameter.DefaultValue = pDefaultValue;
 
-			this.Add_Node_To_List( New_Engine_Parameter );
+			this.AddNodeTolist( tmpChaosEngineParameter );
 
 			return true;
 		}
 
-		public string Get_Parameter ( string Parameter_Name )
+		public string GetParameter ( string pParameterKey )
 		{
-			if ( this.Find_First_By_Name ( Parameter_Name ) )
-			{
-				return (Current_Node.Node_Data as Chaos_Engine_Parameter).Parameter_Value;
-			}
+			if ( this.FindFirstByKey ( pParameterKey ) )
+				return (CurrentNode.NodeData as Chaos_Engine_Parameter).Value;
 			else
-			{
 				return "";
-			}
 		}
 
-		public bool Set_Parameter ( string Parameter_Name, string New_Value )
+		public bool SetParameter ( string pParameterKey, string pParameterValue )
 		{
-			if ( this.Find_First_By_Name ( Parameter_Name ) )
+			if ( this.FindFirstByKey ( pParameterKey ) )
 			{
-				(Current_Node.Node_Data as Chaos_Engine_Parameter).Parameter_Value = New_Value;
+				(CurrentNode.NodeData as Chaos_Engine_Parameter).Value = pParameterValue;
 				return true;
 			}
 			else
@@ -49,30 +44,24 @@ namespace Master_Chaos_Display
 			}
 		}
 
-		public bool Find_First_By_Name ( string Name_To_Find )
+		public bool FindFirstByKey ( string pKeyToFind )
 		{
-			Name_Match Search_Criteria = new Name_Match ( Name_To_Find );
+			KeyMatch Search_Criteria = new KeyMatch ( pKeyToFind );
 
-			if ( this.Log_All_Searches )
-			{
-				this.Write_To_Log( "Find Parameter: " + Search_Criteria.Name );
-			}
+			if ( this.LogAllSearches )
+				this.WriteToLog( "Find Parameter: " + Search_Criteria.Key );
 
-			return this.Find_First( Search_Criteria );
+			return this.FindFirst( Search_Criteria );
 		}
 
-		public string Current_Parameter_Name
+		public string CurrentParameterKey
 		{
 			get
 			{
 				if ( this.Count > 0 )
-				{
-					return (Current_Node.Node_Data as Chaos_Engine_Parameter).Name;
-				}
+					return (CurrentNode.NodeData as Chaos_Engine_Parameter).ParameterKey;
 				else
-				{
 					return "";
-				}
 			}
 		}
 
@@ -81,91 +70,81 @@ namespace Master_Chaos_Display
 		{
 			get
 			{
-				string Parameter_Set = "";
+				string tmpParameterSet = "";
 
-				this.Move_First();
+				this.MoveFirst();
 				if ( this.Count > 0 )
 				{
 					//Walk through the list.
 					while ( !this.EOL )
 					{
-						Parameter_Set += (Current_Node.Node_Data as Chaos_Engine_Parameter).Name + "[" + (Current_Node.Node_Data as Chaos_Engine_Parameter).Parameter_Value + "] ";
-						this.Move_Next();
+						tmpParameterSet += (CurrentNode.NodeData as Chaos_Engine_Parameter).ParameterKey + "[" + (CurrentNode.NodeData as Chaos_Engine_Parameter).Value + "] ";
+						this.MoveNext();
 					}
 				}
 
-				return Parameter_Set;
+				return tmpParameterSet;
 			}
 		}
 	}
 
-	public class Name_Match : Node_Match
+	public class KeyMatch : NodeMatch
 	{
-		private string Name_To_Match;
+		private string _KeyToMatch;
 
-		private Regex Match_Function;
+		private Regex MatchFunction;
 
-		public Name_Match ( string New_Name_To_Match )
+		public KeyMatch ( string pKeyToMatch )
 		{
 			//Our names have no spaces
-			this.Name_To_Match = New_Name_To_Match.Trim();
+			this._KeyToMatch = pKeyToMatch.Trim();
 
 			//Now build the regular expression out of it
-			this.Match_Function = new Regex( "\\b"+this.Name_To_Match.Replace( "*", ".*" )+"\\b" );
+			this.MatchFunction = new Regex( "\\b"+this._KeyToMatch.Replace( "*", ".*" )+"\\b" );
 		}
 
 		#region Data Access Functions
-		public string Name
+		public string Key
 		{
-			get
-			{
-				return this.Name_To_Match;
-			}
+			get { return this._KeyToMatch; }
 		}
 		#endregion
 
-		public override bool Match ( Data_Node Node_To_Verify )
+		public override bool Match ( DataNode NodeToVerify )
 		{
 			//See if it matches.  This is extremely straightforward.
-			if ( this.Match_Function.IsMatch( (Node_To_Verify.Node_Data as Chaos_Engine_Parameter).Name ) )
-			{
+			if ( this.MatchFunction.IsMatch( (NodeToVerify.NodeData as Chaos_Engine_Parameter).ParameterKey ) )
 				return true;
-			}
 			else
-			{
 				return false;
-			}
 		}
 	}
 
 	class Chaos_Engine_Parameter
 	{
 		//The paramater node for the list of Engine Parameters.
-		private string Parameter_Internal_Name;
+		private string _ParameterKey;
 
-		public string Parameter_Name;
+		public string Name;
 
-		public string Parameter_Description;
+		public string Description;
 
-		public string Parameter_Tooltip;
+		public string Tooltip;
 
-		public string Parameter_Type;
+		public string Type;
 
-		public string Parameter_Value;
+		public string Value;
 
-		public string Parameter_Default_Value;
+		public string DefaultValue;
 
-		public Chaos_Engine_Parameter ( string Internal_Name )
+		public Chaos_Engine_Parameter ( string pKey )
 		{
-			this.Parameter_Internal_Name = Internal_Name;
+			this._ParameterKey = pKey;
 		}
 
-		public string Name
+		public string ParameterKey
 		{
-			get
-			{
-				return this.Parameter_Internal_Name;
-			}
+			get { return this._ParameterKey; }
 		}
  	}
 }

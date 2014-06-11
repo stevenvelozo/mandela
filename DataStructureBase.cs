@@ -1,210 +1,157 @@
 /*
  * A base class for all List memory data structures.
- * 
+ *
  * Prototype and logging information that would be considered "standard" will start
  * here.
- * 
+ *
  * This should allow us to reuse comparators for multiple data structures.
- * 
+ *
   * TODO: Consider putting saving and loading crap into this
  */
 
 using System;
-using Master_Log_File;
+using MasterLogFile;
 
-namespace Master_Data_Structure_Base
+namespace MasterDataStructureBase
 {
-	public class Data_Structure_Base : Pass_Through_Logged_Class
+	public class DataStructureBase : PassThroughLoggedClass
 	{
 		//This is so we can override the current node business
-		protected Data_Node Internal_Current_Node;
+		protected DataNode _CurrentNode;
 
 		//The overridable property
-		public virtual Data_Node Current_Node
+		public virtual DataNode CurrentNode
+		{
+			get { return this._CurrentNode; }
+			set { } //Nothing now, but we want to be able to override it. 
+		}
+
+		public long CurrentNodeIndex
 		{
 			get
 			{
-				return this.Internal_Current_Node;
-			}
-			set
-			{
-				//Nothing now, but we want to be able to override it.
+				if (this._NodeCount > 0)
+					return this.CurrentNode.Index;
+				else
+					return 0;
 			}
 		}
 
-		public long Current_Item_Key
-		{
-			get
-			{
-				if (this.Node_Count > 0)
-				{
-					return this.Current_Node.Index;
-				}
-				else
-				{
-					return 0;
-				}
-			}
-		}
-		
-		
 		// The number of items in the data structure
-		protected long Node_Count;
-		
+		protected long _NodeCount;
+
 		//Default statistics for a data structure
-		protected long Search_Count;            //Number of searches
-		protected long Search_Match_Count;      //Number of matches resulting from searches
-		protected long Navigation_Count;		//Number of navigation calls made (movefirst, etc)
+		protected long _SearchCount;            //Number of searches
+		protected long _SearchMatchCount;      //Number of matches resulting from searches
+		protected long _NavigationCount;		//Number of navigation calls made (movefirst, etc)
 		//Extended statistics
-		protected long Add_Count;				//Number of inserts
-		protected long Delete_Count;			//Number of deletes
-		
+		protected long _AddCount;				//Number of inserts
+		protected long _DeleteCount;			//Number of deletes
+
 		//Logging options
-		protected bool Log_Searches;			//Time and log each search
-		protected bool Log_Navigation;		    //Log each navigation function (WAY HUGE log files)
+		protected bool _LogSearch;			//Time and log each search
+		protected bool _LogNavigation;		    //Log each navigation function (WAY HUGE log files)
 		//Extended logging options
-		protected bool Log_Adds;				//Log each add (can make log files HUGE)
-		protected bool Log_Deletes;				//Log each delete operation
-		
+		protected bool _LogAdd;				//Log each add (can make log files HUGE)
+		protected bool _LogDelete;				//Log each delete operation
+
 
 		// The Auto Incriment key
-		protected long Last_Given_Key;
+		protected long _LastGivenIndex;
 
-		public Data_Structure_Base ()
+		public DataStructureBase ()
 		{
 			//Initialize the list count
-			this.Node_Count = 0;
+			this._NodeCount = 0;
 
 			//Reset the statistics
-			this.Search_Count = 0;
-			this.Search_Match_Count = 0;
-			this.Navigation_Count = 0;
-			this.Add_Count = 0;
-			this.Delete_Count = 0;
-			
-			this.Log_Searches = false;
-			this.Log_Navigation = false;
-			this.Log_Adds = false;
-			this.Log_Deletes = false;
-			
+			this._SearchCount = 0;
+			this._SearchMatchCount = 0;
+			this._NavigationCount = 0;
+			this._AddCount = 0;
+			this._DeleteCount = 0;
+
+			this._LogSearch = false;
+			this._LogNavigation = false;
+			this._LogAdd = false;
+			this._LogDelete = false;
+
 			//The list is empty.  Zero everything out!
-			this.Last_Given_Key = 0;
+			this._LastGivenIndex = 0;
 		}
-		
+
 		#region Data Access Functions
 		/// <summary>
 		/// The list count
 		/// </summary>
 		public long Count
 		{
-			get
-			{
-				return this.Node_Count;
-			}
+			get { return this._NodeCount; }
 		}
-		
-		public long Statistic_Search_Count
+
+		public long StatisticSearchCount
 		{
-			get
-			{
-				return this.Search_Count;
-			}
+			get { return this._SearchCount; }
 		}
-		
-		public long Statistic_Search_Match_Count
+
+		public long StatisticSearchMatchCount
 		{
-			get
-			{
-				return this.Search_Match_Count;
-			}
+			get { return this._SearchMatchCount; }
 		}
-		
-		public long Statistic_Navigation_Count
+
+		public long StatisticNavigationCount
 		{
-			get
-			{
-				return this.Navigation_Count;
-			}
+			get { return this._NavigationCount; }
 		}
-		public long Statistic_Add_Count
+		public long StatisticAddCount
 		{
-			get
-			{
-				return this.Add_Count;
-			}
+			get { return this._AddCount; }
 		}
-		
-		public long Statistic_Delete_Count
+
+		public long StatisticDeleteCount
 		{
-			get
-			{
-				return this.Delete_Count;
-			}
+			get { return this._DeleteCount; }
 		}
-		
-		
-		public bool Log_All_Searches
+
+
+		public bool LogAllSearches
 		{
-			get
-			{
-				return this.Log_Searches;
-			}
-			set
-			{
-				this.Log_Searches = value;
-			}
+			get { return this._LogSearch; }
+			set { this._LogSearch = value; }
 		}
-		
-		public bool Log_All_Navigation
+
+		public bool LogAllNavigation
 		{
-			get
-			{
-				return this.Log_Navigation;
-			}
-			set
-			{
-				this.Log_Navigation = value;
-			}
+			get { return this._LogNavigation; }
+			set { this._LogNavigation = value; }
 		}
-		
-		public bool Log_All_Adds
+
+		public bool LogAllAdds
 		{
-			get
-			{
-				return this.Log_Adds;
-			}
-			set
-			{
-				this.Log_Adds = value;
-			}
+			get { return this._LogAdd; }
+			set { this._LogAdd = value; }
 		}
-		
-		public bool Log_All_Deletes
+
+		public bool LogAllDeletes
 		{
-			get
-			{
-				return this.Log_Deletes;
-			}
-			set
-			{
-				this.Log_Deletes = value;
-			}
+			get { return this._LogDelete; }
+			set { this._LogDelete = value; }
 		}
 		#endregion
 	}
 
-	public class Data_Node
+	public class DataNode
     {
         //The primary key
-        private long Data_Node_ID;
-        
+		private long _NodeIndex;
+
         //The data gram
-        private object Data_Gram;
-        
+		private object _NodeData;
+
         //The constructor
-        public Data_Node ( object New_Data_Gram )
+        public DataNode ( object pNodeData )
         {
-        	this.Data_Gram = New_Data_Gram;
+        	this._NodeData = pNodeData;
         }
 
         #region Data Access Functions
@@ -213,45 +160,33 @@ namespace Master_Data_Structure_Base
         /// </summary>
         public long Index
         {
-        	get
-        	{
-        		return this.Data_Node_ID;
-        	}
-        	set
-        	{
-        		this.Data_Node_ID = value;
-        	}
+        	get { return this._NodeIndex; }
+        	set { this._NodeIndex = value; }
         }
-        
-        public object Node_Data
+
+        public object NodeData
         {
-        	get
-        	{
-        		return this.Data_Gram;
-        	}
-        	set
-        	{
-        		this.Data_Gram = value;
-        	}
+        	get { return this._NodeData; }
+        	set { this._NodeData = value; }
         }
         #endregion
     }
 
-		
-	public class Node_Match
+
+	public class NodeMatch
 	{
 		//The key to match
-		private long Node_Key;
-		
-		public Node_Match ()
+		private long _NodeIndex;
+
+		public NodeMatch ()
 		{
 			//Do nothing
-			this.Node_Key = 0;
+			this._NodeIndex = 0;
 		}
-		
-		public Node_Match ( long Node_Key_To_Find )
+
+		public NodeMatch ( long pNodeIndexToFind )
 		{
-			this.Node_Key = Node_Key_To_Find;
+			this._NodeIndex = pNodeIndexToFind;
 		}
 
 		/// <summary>
@@ -263,34 +198,24 @@ namespace Master_Data_Structure_Base
 		/// <param name="Left_Node_Value">Left Comparator</param>
 		/// <param name="Right_Node_Value">Right Comparator</param>
 		/// <returns>-1 for L less than R, 0 for L equal to R, 1 for L greater than R</returns>
-		public virtual int Compare ( Data_Node Left_Node_Value, Data_Node Right_Node_Value )
+		public virtual int Compare ( DataNode pLeftNodeValue, DataNode pRightNodeValue )
 		{
-			if ( Left_Node_Value.Index < Right_Node_Value.Index )
-			{
+			if ( pLeftNodeValue.Index < pRightNodeValue.Index )
 				return -1;
-			}
-			else if ( Left_Node_Value.Index == Right_Node_Value.Index )
-			{
+			else if ( pLeftNodeValue.Index == pRightNodeValue.Index )
 				return 0;
-			}
 			else
-			{
 				return 1;
-			}
 		}
-		
-		
-		public virtual bool Match ( Data_Node Node_To_Verify )
+
+
+		public virtual bool Match ( DataNode pNodeToVerify )
 		{
 			//See if it matches.  This is extremely straightforward.
-			if ( Node_To_Verify.Index == this.Node_Key )
-			{
+			if ( pNodeToVerify.Index == this._NodeIndex )
 				return true;
-			}
 			else
-			{
 				return false;
-			}
 		}
 	}
 }

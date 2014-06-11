@@ -3,64 +3,57 @@
  *
  * Used for timing with processor tick lapses as the unit (approximate ms)
  */
-
 using System;
 
-namespace Master_Time_Span
+namespace MasterTimeSpan
 {
 	/// <summary>
-	/// Description of Time_Span.
+	/// Description of TimeSpanMetric.
 	/// </summary>
-	public class Time_Span
+	public class TimeSpanMetric
 	{
-		private int Processor_Tick_Start;
-		private int Processor_Tick_Stop;
+		private int _TickStart;
+		private int _TickStop;
 
-		private int Last_Difference;
+		private int _LastDifference;
 
-		public Time_Span()
+		public TimeSpanMetric()
 		{
 			//No sense not starting the timer at instantiation
 			this.Start();
 		}
 
 		#region Data Access
-		public int Time_Difference
+		public int TimeDifference
 		{
-			get
-			{
-				return this.Last_Difference;
-			}
+			get { return this._LastDifference; }
 		}
 		#endregion
 
 		public void Start()
 		{
 			//Set the start time
-			this.Processor_Tick_Start = System.Environment.TickCount;
+			this._TickStart = System.Environment.TickCount;
 
 			//Reset the difference
-			this.Last_Difference = 0;
+			this._LastDifference = 0;
 		}
 
 		public void Time_Stamp()
 		{
 			//Set the stop time
-			this.Processor_Tick_Stop = System.Environment.TickCount;
+			this._TickStop = System.Environment.TickCount;
 
 			//Figure out the difference
-			this.Last_Difference = this.Processor_Tick_Stop - this.Processor_Tick_Start;
+			this._LastDifference = this._TickStop - this._TickStart;
 		}
 
 		public int Current_Time_Stamp
 		{
-			get
-			{
-				return System.Environment.TickCount - this.Processor_Tick_Start;
-			}
+			get { return System.Environment.TickCount - this._TickStart; }
 		}
 
-		public string Human_Friendly_Time ( int Milliseconds )
+		public string HumanFriendlyTime ( int Milliseconds )
 		{
 			int Seconds = 0;
 			int Minutes = 0;
@@ -81,9 +74,7 @@ namespace Master_Time_Span
 					Hours = Minutes / 60;
 
 					if ( Hours > 0 )
-					{
 						Days = Hours / 24;
-					}
 				}
 			}
 
@@ -91,22 +82,16 @@ namespace Master_Time_Span
 				CompleteDate = CompleteDate + Days.ToString() + "d ";
 
 			if ( Hours%24 < 10 )
-			{
 				CompleteDate = CompleteDate + "0";
-			}
 			CompleteDate = CompleteDate + (Hours%24).ToString() + ":";
 
 
 			if ( Minutes%60 < 10 )
-			{
 				CompleteDate = CompleteDate + "0";
-			}
 			CompleteDate = CompleteDate + (Minutes%60).ToString() + ":";
 
 			if ( Seconds%60 < 10 )
-			{
 				CompleteDate = CompleteDate + "0";
-			}
 			CompleteDate = CompleteDate + (Seconds%60).ToString();
 
 			return CompleteDate;

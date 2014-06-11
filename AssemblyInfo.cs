@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 [assembly: AssemblyTitle("Mandela")]
 [assembly: AssemblyDescription("Chaos Math Image Exploration")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Sound Designs")]
+[assembly: AssemblyCompany("Steven Velozo")]
 [assembly: AssemblyProduct("Mandela")]
 [assembly: AssemblyCopyright("2005")]
 [assembly: AssemblyTrademark("")]

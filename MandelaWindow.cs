@@ -2,454 +2,452 @@ using System;
 using Gtk;
 using Gdk;
 using GLib;
-using Master_Super_Image;
-using Master_Log_File;
-using Master_Time_Span;
-using Master_Chaos_Display;
+using MasterSuperImage;
+using MasterLogFile;
+using MasterTimeSpan;
+using MasterChaosDisplay;
 
 //Todo: Save as Image, Linked List of History, Parameters, Gradient Designer (Everything but Save As in a sidebar?)
 //
 //Mandelbrot XMin[-1.39433003089995] XMax[-1.39431020057868] YMin[0.002951798228876] YMax[0.002966670969832] Screen_Color_Count[255] Iterations[500]
 //Mandelbrot XMin[-0.477803931187928] XMax[-0.477559790575135] YMin[-0.534768014667847] YMax[-0.534584909208252] Screen_Color_Count[255] Iterations[500]
-public class Mandela_Window : Gtk.Window
+public class MandelaWindow : Gtk.Window
 {
-	Master_Chaos_Display.Chaos_Display Main_Chaos_Engine;
+	MasterChaosDisplay.ChaosDisplay tmpChaosDisplay;
 
-	ProgressBar Computation_Progress;
-	Time_Span Computation_Progress_Time;
+	ProgressBar _ComputationProgressBar;
+	TimeSpanMetric _ComputationProgressTimer;
 
-	AccelGroup Accelerator_Group;
+	AccelGroup _AcceleratorGroup;
 
-	private Log_File Application_Log_File;
+	private LogFile _ApplicationLogFile;
 
-	bool Current_Quality_Set;
-	CheckMenuItem[] Menu_Quality;
+	bool _CurrentQualitySet;
+	CheckMenuItem[] _MenuQuality;
 
-	public Mandela_Window () : base ("Mandela")
+	public MandelaWindow () : base ("Mandela")
 	{
-		this.Application_Log_File = new Log_File("Mandela");
-		this.Application_Log_File.Echo_To_Console = true;
+		this._ApplicationLogFile = new LogFile("Mandela");
+		this._ApplicationLogFile.EchoToConsole = true;
 
-		this.Write_To_Log("Loading and starting Mandela");
+		this.WriteToLog("Loading and starting Mandela");
 
-		this.Main_Chaos_Engine = new Chaos_Display( 1000, 650 );
-		this.Main_Chaos_Engine.Write_Log += new Write_Log_Event_Handler ( this.Chained_Write_Log );
-		this.Main_Chaos_Engine.Render_Chaos_Image += new EventHandler ( this.Start_Image_Render );
+		this.tmpChaosDisplay = new ChaosDisplay( 1000, 650 );
+		this.tmpChaosDisplay.WriteLog += new WriteLogEventHandler ( this.ChainedWriteLog );
+		this.tmpChaosDisplay.RenderChaosImage += new EventHandler ( this.StartImageRender );
 
 		this.Resizable = false;
 
 		this.DeleteEvent += new DeleteEventHandler (OnMyWindowDelete);
 
-		this.Computation_Progress = new ProgressBar();
-		this.Computation_Progress.BarStyle = ProgressBarStyle.Continuous;
+		this._ComputationProgressBar = new ProgressBar();
+		this._ComputationProgressBar.BarStyle = ProgressBarStyle.Continuous;
 
-		Accelerator_Group = new AccelGroup ();
+		_AcceleratorGroup = new AccelGroup ();
 
-		this.Add ( User_Interface() );
+		this.Add ( UserInterface() );
 
-		this.AddAccelGroup(Accelerator_Group);
+		this.AddAccelGroup(_AcceleratorGroup);
 
-		this.Render_Image();
+		this.RenderImage();
 
 		this.ShowAll ();
 	}
 
 	#region Chaos Control Shim Functions
-	void Start_Image_Render ( object Sender, EventArgs Arguments )
+	void StartImageRender ( object pSender, EventArgs pArguments )
 	{
-		this.Render_Image();
+		this.RenderImage();
 	}
 
-	void Render_Image ()
+	void RenderImage ()
 	{
-		TimeoutHandler Progress_Update_Handler = new TimeoutHandler ( this.Progress_Update );
+		TimeoutHandler Progress_Update_Handler = new TimeoutHandler ( this.ProgressUpdate );
 
-		this.Computation_Progress_Time = new Time_Span();
-		this.Computation_Progress.Fraction = 0.0;
+		this._ComputationProgressTimer = new TimeSpanMetric();
+		this._ComputationProgressBar.Fraction = 0.0;
 
-		this.Main_Chaos_Engine.Render();
+		this.tmpChaosDisplay.Render();
 
 		GLib.Timeout.Add( 200, Progress_Update_Handler );
 	}
 
-	bool Progress_Update ()
+	bool ProgressUpdate ()
 	{
 
-		this.Computation_Progress.Fraction = this.Main_Chaos_Engine.Progress;
+		this._ComputationProgressBar.Fraction = this.tmpChaosDisplay.Progress;
 
-		if ( this.Main_Chaos_Engine.Progress == 1.0 )
+		if ( this.tmpChaosDisplay.Progress == 1.0 )
 		{
-			this.Computation_Progress.Text = this.Computation_Progress.Text + "Completed: " + this.Computation_Progress_Time.Human_Friendly_Time ( this.Computation_Progress_Time.Current_Time_Stamp ) + " (" + this.Computation_Progress_Time.Current_Time_Stamp.ToString() + "ms)";
+			this._ComputationProgressBar.Text = this._ComputationProgressBar.Text + "Completed: " + this._ComputationProgressTimer.HumanFriendlyTime ( this._ComputationProgressTimer.Current_Time_Stamp ) + " (" + this._ComputationProgressTimer.Current_Time_Stamp.ToString() + "ms)";
 			return false;
 		}
 		else
 		{
-			this.Computation_Progress.Text = "[Elapsed: " + this.Computation_Progress_Time.Human_Friendly_Time ( this.Computation_Progress_Time.Current_Time_Stamp ) + "] ";
-			this.Computation_Progress.Text = this.Computation_Progress.Text + System.Math.Round(this.Main_Chaos_Engine.Progress * 100, 0).ToString() + "%";
-			this.Computation_Progress.Text = this.Computation_Progress.Text + " [Estimated Time Remaining: " + this.Computation_Progress_Time.Human_Friendly_Time ( (int)(this.Computation_Progress_Time.Current_Time_Stamp / this.Main_Chaos_Engine.Progress) - this.Computation_Progress_Time.Current_Time_Stamp ) +  "]";
+			this._ComputationProgressBar.Text = "[Elapsed: " + this._ComputationProgressTimer.HumanFriendlyTime ( this._ComputationProgressTimer.Current_Time_Stamp ) + "] ";
+			this._ComputationProgressBar.Text = this._ComputationProgressBar.Text + System.Math.Round(this.tmpChaosDisplay.Progress * 100, 0).ToString() + "%";
+			this._ComputationProgressBar.Text = this._ComputationProgressBar.Text + " [Estimated Time Remaining: " + this._ComputationProgressTimer.HumanFriendlyTime ( (int)(this._ComputationProgressTimer.Current_Time_Stamp / this.tmpChaosDisplay.Progress) - this._ComputationProgressTimer.Current_Time_Stamp ) +  "]";
 			return true;
 		}
 	}
 
-	void Set_Render_Quality ( int Quality_Level )
+	void SetRenderQuality ( int pQualityLevel )
 	{
 		//Todo:  Make this cludge set itself right when the renderer changes!  Likely, force it to "1"
-		if ( !this.Current_Quality_Set )
+		if (!this._CurrentQualitySet)
 		{
-			this.Current_Quality_Set = true;
+			this._CurrentQualitySet = true;
 
-			this.Write_To_Log ("Render Quality Changed to: " + Quality_Level.ToString());
+			this.WriteToLog ("Render Quality Changed to: " + pQualityLevel.ToString());
 
-			switch ( Quality_Level )
+			switch ( pQualityLevel )
 			{
 				case 0:
-					this.Main_Chaos_Engine.Render_Quality = 0;
+					this.tmpChaosDisplay.RenderQuality = 0;
 					break;
 
 				case 1:
-					this.Main_Chaos_Engine.Render_Quality = 1;
+					this.tmpChaosDisplay.RenderQuality = 1;
 					break;
 
 				case 2:
-					this.Main_Chaos_Engine.Render_Quality = 3;
+					this.tmpChaosDisplay.RenderQuality = 3;
 					break;
 
 				case 3:
-					this.Main_Chaos_Engine.Render_Quality = 5;
+					this.tmpChaosDisplay.RenderQuality = 5;
 					break;
 
 				case 4:
-					this.Main_Chaos_Engine.Render_Quality = 7;
+					this.tmpChaosDisplay.RenderQuality = 7;
 					break;
 
 				case 5:
-					this.Main_Chaos_Engine.Render_Quality = 9;
+					this.tmpChaosDisplay.RenderQuality = 9;
 					break;
 
 				case 6:
-					this.Main_Chaos_Engine.Render_Quality = 11;
+					this.tmpChaosDisplay.RenderQuality = 11;
 					break;
 
 				case 7:
-					this.Main_Chaos_Engine.Render_Quality = 13;
+					this.tmpChaosDisplay.RenderQuality = 13;
 					break;
 			}
 
-			for (int tmp_Counter = 0; tmp_Counter < 8; tmp_Counter++)
+			for (int tmpCounter = 0; tmpCounter < 8; tmpCounter++)
 			{
-				if ( tmp_Counter != Quality_Level )
+				if ( tmpCounter != pQualityLevel )
 				{
-					this.Menu_Quality[tmp_Counter].Active = false;
+					this._MenuQuality[tmpCounter].Active = false;
 				}
 			}
-			this.Current_Quality_Set = false;
+			this._CurrentQualitySet = false;
 		}
 	}
 	#endregion
 
 
-	void Write_To_Log ( string Log_Text )
+	void WriteToLog ( string pLogText )
 	{
-		this.Application_Log_File.Write_Log_File ( Log_Text );
+		this._ApplicationLogFile.WriteLogFile ( pLogText );
 	}
 
 	#region UI Event Handlers
-	void OnMyWindowDelete (object sender, DeleteEventArgs a)
+	void OnMyWindowDelete (object pSender, DeleteEventArgs pArguments)
 	{
 		Application.Quit ();
-		a.RetVal = true;
+		pArguments.RetVal = true;
 	}
 
-	protected void Chained_Write_Log( object Sender, Write_Log_Event_Args Arguments )
+	protected void ChainedWriteLog( object pSender, WriteLogEventArgs pArguments )
 	{
 		//Write it to the textual log file if it is > 0
-		if ( Arguments.Log_Level > 0 )
+		if ( pArguments.LogLevel > 0 )
 		{
-			this.Application_Log_File.Write_Log_File ( Arguments.Log_Text );
+			this._ApplicationLogFile.WriteLogFile ( pArguments.LogText );
 		}
 	}
 	#endregion
 
 
 	#region Menu Structure and Event Handlers
-	void Menu_Switch_Engine_Mandelbrot ( object Sender, EventArgs Arguments )
+	void MenuSwitchEngineMandelbrot ( object pSender, EventArgs pArguments )
 	{
-		this.Write_To_Log ( "Engine Switched to Mandelbrot" );
-		this.Main_Chaos_Engine.Set_Engine( "Mandelbrot" );
-		this.Render_Image();
+		this.WriteToLog ( "Engine Switched to Mandelbrot" );
+		this.tmpChaosDisplay.SetEngine( "Mandelbrot" );
+		this.RenderImage();
 	}
 
-	void Menu_Switch_Engine_Julia ( object Sender, EventArgs Arguments )
+	void MenuSwitchEngineJulia ( object pSender, EventArgs pArguments )
 	{
-		this.Write_To_Log ( "Engine Switched to Julia" );
-		this.Main_Chaos_Engine.Set_Engine( "Julia" );
-		this.Render_Image();
+		this.WriteToLog ( "Engine Switched to Julia" );
+		this.tmpChaosDisplay.SetEngine( "Julia" );
+		this.RenderImage();
 	}
 
-	void Menu_Switch_Engine_Grid ( object Sender, EventArgs Arguments )
+	void MenuSwitchEngineGrid ( object pSender, EventArgs pArguments )
 	{
-		this.Write_To_Log ( "Engine Switched to Debug Grid" );
-		this.Main_Chaos_Engine.Set_Engine( "Grid Debug" );
-		this.Render_Image();
+		this.WriteToLog ( "Engine Switched to Debug Grid" );
+		this.tmpChaosDisplay.SetEngine( "Grid Debug" );
+		this.RenderImage();
 	}
 
-	void Menu_Copy_Parameters ( object Sender, EventArgs Arguments )
+	void Menu_Copy_Parameters ( object pSender, EventArgs pArguments )
 	{
-		//Hmmm  shim class?
 	}
 
-	void Menu_Selection_Hide ( object Sender, EventArgs Arguments )
+	void MenuSelectionHide ( object pSender, EventArgs pArguments )
 	{
-		this.Main_Chaos_Engine.Hide_Selection();
+		this.tmpChaosDisplay.HideSelection();
 	}
 
-	void Menu_Selection_Show ( object Sender, EventArgs Arguments )
+	void MenuSelectionShow ( object pSender, EventArgs pArguments )
 	{
-		this.Main_Chaos_Engine.Show_Selection();
+		this.tmpChaosDisplay.ShowSelection();
 	}
 
-	void Menu_Exit ( object Sender, EventArgs Arguments )
+	void Menu_Exit ( object pSender, EventArgs pArguments )
 	{
 		Application.Quit();
 	}
 
-	void Menu_Render (object sender, EventArgs args)
+	void Menu_Render (object pSender, EventArgs pArguments)
 	{
-		this.Render_Image();
+		this.RenderImage();
 	}
 
 	//TODO: Learn to do this the right way with GTK ... the documentation is so frustrating sometimes.
-	void Menu_Quality_Change_0 (object sender, EventArgs args)
+	void MenuQualityChange0 (object pSender, EventArgs pArguments)
 	{
-		this.Set_Render_Quality ( 0  );
+		this.SetRenderQuality ( 0  );
 	}
 
-	void Menu_Quality_Change_1 (object sender, EventArgs args)
+	void MenuQualityChange1 (object pSender, EventArgs pArguments)
 	{
-		this.Set_Render_Quality ( 1 );
+		this.SetRenderQuality ( 1 );
 	}
 
-	void Menu_Quality_Change_2 (object sender, EventArgs args)
+	void MenuQualityChange2 (object pSender, EventArgs pArguments)
 	{
-		this.Set_Render_Quality ( 2 );
+		this.SetRenderQuality ( 2 );
 	}
 
-	void Menu_Quality_Change_3 (object sender, EventArgs args)
+	void MenuQualityChange3 (object pSender, EventArgs pArguments)
 	{
-		this.Set_Render_Quality ( 3 );
+		this.SetRenderQuality ( 3 );
 	}
 
-	void Menu_Quality_Change_4 (object sender, EventArgs args)
+	void MenuQualityChange4 (object pSender, EventArgs pArguments)
 	{
-		this.Set_Render_Quality ( 4 );
+		this.SetRenderQuality ( 4 );
 	}
 
-	void Menu_Quality_Change_5 (object sender, EventArgs args)
+	void MenuQualityChange5 (object pSender, EventArgs pArguments)
 	{
-		this.Set_Render_Quality ( 5 );
+		this.SetRenderQuality ( 5 );
 	}
 
-	void Menu_Quality_Change_6 (object sender, EventArgs args)
+	void MenuQualityChange6 (object pSender, EventArgs pArguments)
 	{
-		this.Set_Render_Quality ( 6 );
+		this.SetRenderQuality ( 6 );
 	}
 
-	void Menu_Quality_Change_7 (object sender, EventArgs args)
+	void MenuQualityChange7 (object pSender, EventArgs pArguments)
 	{
-		this.Set_Render_Quality ( 7 );
+		this.SetRenderQuality ( 7 );
 	}
 
-	void Menu_Quality_Toggle_Visual (object sender, EventArgs args)
+	void MenuQualityToggleVisual (object pSender, EventArgs pArguments)
 	{
-		this.Main_Chaos_Engine.Render_Visual = ((CheckMenuItem)sender).Active;
+		this.tmpChaosDisplay.RenderVisual = ((CheckMenuItem)pSender).Active;
 	}
 
-	private MenuBar Application_Menu()
+	private MenuBar _ApplicationMenu()
 	{
-		MenuItem tmp_Menu_Item, tmp_Menu_Header;
+		MenuItem tmpMenuItem, tmpMenuHeader;
 
-		SeparatorMenuItem tmp_Separator;
+		SeparatorMenuItem tmpSeparator;
 
-		MenuBar Main_Menu = new MenuBar ();
+		MenuBar tmpMainMenu = new MenuBar ();
 
 		//The "File" menu
-		Menu File_Menu = new Menu ();
+		Menu tmpFileMenu = new Menu ();
 
-		tmp_Menu_Item = new ImageMenuItem (Stock.Open, Accelerator_Group);
+		tmpMenuItem = new ImageMenuItem (Stock.Open, _AcceleratorGroup);
 		//tmp_Menu_Item.Activated += new EventHandler ();
-		File_Menu.Append (tmp_Menu_Item);
+		tmpFileMenu.Append (tmpMenuItem);
 
-		tmp_Menu_Item = new ImageMenuItem (Stock.Save, Accelerator_Group);
+		tmpMenuItem = new ImageMenuItem (Stock.Save, _AcceleratorGroup);
 		//tmp_Menu_Item.Activated += new EventHandler ();
-		File_Menu.Append (tmp_Menu_Item);
+		tmpFileMenu.Append (tmpMenuItem);
 
-		tmp_Menu_Item = new ImageMenuItem (Stock.SaveAs, Accelerator_Group);
+		tmpMenuItem = new ImageMenuItem (Stock.SaveAs, _AcceleratorGroup);
 		//tmp_Menu_Item.Activated += new EventHandler ();
-		File_Menu.Append (tmp_Menu_Item);
+		tmpFileMenu.Append (tmpMenuItem);
 
-		tmp_Menu_Item = new ImageMenuItem (Stock.New, Accelerator_Group);
+		tmpMenuItem = new ImageMenuItem (Stock.New, _AcceleratorGroup);
 		//tmp_Menu_Item.Activated += new EventHandler ();
-		File_Menu.Append (tmp_Menu_Item);
+		tmpFileMenu.Append (tmpMenuItem);
 
-		tmp_Separator = new SeparatorMenuItem();
-		File_Menu.Append (tmp_Separator);
+		tmpSeparator = new SeparatorMenuItem();
+		tmpFileMenu.Append (tmpSeparator);
 
-		tmp_Menu_Item = new MenuItem("_Export Image (unimplimented)");
+		tmpMenuItem = new MenuItem("_Export Image (unimplimented)");
 		//tmp_Menu_Item.Activated += new EventHandler ();
-		File_Menu.Append (tmp_Menu_Item);
+		tmpFileMenu.Append (tmpMenuItem);
 
-		tmp_Separator = new SeparatorMenuItem();
-		File_Menu.Append (tmp_Separator);
+		tmpSeparator = new SeparatorMenuItem();
+		tmpFileMenu.Append (tmpSeparator);
 
-		tmp_Menu_Item = new ImageMenuItem (Stock.Quit, Accelerator_Group);
-		tmp_Menu_Item.Activated += new EventHandler ( Menu_Exit );
-		File_Menu.Append (tmp_Menu_Item);
+		tmpMenuItem = new ImageMenuItem (Stock.Quit, _AcceleratorGroup);
+		tmpMenuItem.Activated += new EventHandler ( Menu_Exit );
+		tmpFileMenu.Append (tmpMenuItem);
 
-		tmp_Menu_Header = new MenuItem("_File");
-		tmp_Menu_Header.Submenu = File_Menu;
+		tmpMenuHeader = new MenuItem("_File");
+		tmpMenuHeader.Submenu = tmpFileMenu;
 
-		Main_Menu.Append ( tmp_Menu_Header );
+		tmpMainMenu.Append ( tmpMenuHeader );
 
 
 
-		Menu Edit_Menu = new Menu ();
+		Menu tmpEditMenu = new Menu ();
 
-		tmp_Menu_Item = new ImageMenuItem (Stock.Copy, Accelerator_Group);
-		tmp_Menu_Item.Activated += new EventHandler ( Menu_Copy_Parameters );
-		Edit_Menu.Append (tmp_Menu_Item);
+		tmpMenuItem = new ImageMenuItem (Stock.Copy, _AcceleratorGroup);
+		tmpMenuItem.Activated += new EventHandler ( Menu_Copy_Parameters );
+		tmpEditMenu.Append (tmpMenuItem);
 
-		tmp_Menu_Item = new MenuItem("Copy _Image");
+		tmpMenuItem = new MenuItem("Copy _Image");
 		//tmp_Menu_Item.Activated += new EventHandler (  );
-		Edit_Menu.Append ( tmp_Menu_Item );
+		tmpEditMenu.Append ( tmpMenuItem );
 
-		tmp_Menu_Item = new ImageMenuItem (Stock.Paste, Accelerator_Group);
+		tmpMenuItem = new ImageMenuItem (Stock.Paste, _AcceleratorGroup);
 		//tmp_Menu_Item.Activated += new EventHandler ();
-		Edit_Menu.Append (tmp_Menu_Item);
+		tmpEditMenu.Append (tmpMenuItem);
 
-		tmp_Separator = new SeparatorMenuItem();
-		Edit_Menu.Append (tmp_Separator);
+		tmpSeparator = new SeparatorMenuItem();
+		tmpEditMenu.Append (tmpSeparator);
 
-		tmp_Menu_Item = new MenuItem("_Show Selection");
-		tmp_Menu_Item.Activated += new EventHandler ( Menu_Selection_Show );
-		tmp_Menu_Item.AddAccelerator ("activate", Accelerator_Group, new AccelKey (Gdk.Key.F11, Gdk.ModifierType.None, AccelFlags.Visible));
-		Edit_Menu.Append ( tmp_Menu_Item );
+		tmpMenuItem = new MenuItem("_Show Selection");
+		tmpMenuItem.Activated += new EventHandler ( MenuSelectionShow );
+		tmpMenuItem.AddAccelerator ("activate", _AcceleratorGroup, new AccelKey (Gdk.Key.F11, Gdk.ModifierType.None, AccelFlags.Visible));
+		tmpEditMenu.Append ( tmpMenuItem );
 
-		tmp_Menu_Item = new MenuItem("_Hide Selection");
-		tmp_Menu_Item.Activated += new EventHandler ( Menu_Selection_Hide );
-		tmp_Menu_Item.AddAccelerator ("activate", Accelerator_Group, new AccelKey (Gdk.Key.F12, Gdk.ModifierType.None, AccelFlags.Visible));
-		Edit_Menu.Append ( tmp_Menu_Item );
+		tmpMenuItem = new MenuItem("_Hide Selection");
+		tmpMenuItem.Activated += new EventHandler ( MenuSelectionHide );
+		tmpMenuItem.AddAccelerator ("activate", _AcceleratorGroup, new AccelKey (Gdk.Key.F12, Gdk.ModifierType.None, AccelFlags.Visible));
+		tmpEditMenu.Append ( tmpMenuItem );
 
-		tmp_Menu_Header = new MenuItem("_Edit");
-		tmp_Menu_Header.Submenu = Edit_Menu;
-		Main_Menu.Append ( tmp_Menu_Header );
-
-
-		Menu Engines_Menu = new Menu ();
-		//
-		tmp_Menu_Item = new MenuItem("_Mandelbrot");
-		tmp_Menu_Item.Activated += new EventHandler ( Menu_Switch_Engine_Mandelbrot );
-		Engines_Menu.Append ( tmp_Menu_Item );
-
-		tmp_Menu_Item = new MenuItem("_Julia");
-		tmp_Menu_Item.Activated += new EventHandler ( Menu_Switch_Engine_Julia );
-		Engines_Menu.Append ( tmp_Menu_Item );
-
-		tmp_Menu_Item = new MenuItem("Debug Grid");
-		tmp_Menu_Item.Activated += new EventHandler ( Menu_Switch_Engine_Grid );
-		Engines_Menu.Append ( tmp_Menu_Item );
-
-		tmp_Menu_Header = new MenuItem("E_ngines");
-		tmp_Menu_Header.Submenu = Engines_Menu;
-		Main_Menu.Append ( tmp_Menu_Header );
+		tmpMenuHeader = new MenuItem("_Edit");
+		tmpMenuHeader.Submenu = tmpEditMenu;
+		tmpMainMenu.Append ( tmpMenuHeader );
 
 
-		Menu Render_Menu = new Menu ();
+		Menu tmpEnginesMenu = new Menu ();
+		tmpMenuItem = new MenuItem("_Mandelbrot");
+		tmpMenuItem.Activated += new EventHandler ( MenuSwitchEngineMandelbrot );
+		tmpEnginesMenu.Append ( tmpMenuItem );
 
-		tmp_Menu_Item = new MenuItem("_Render Image");
-		tmp_Menu_Item.AddAccelerator ("activate", Accelerator_Group, new AccelKey (Gdk.Key.R, Gdk.ModifierType.ControlMask, AccelFlags.Visible));
-		tmp_Menu_Item.Activated += new EventHandler ( Menu_Render );
-		Render_Menu.Append (tmp_Menu_Item);
+		tmpMenuItem = new MenuItem("_Julia");
+		tmpMenuItem.Activated += new EventHandler ( MenuSwitchEngineJulia );
+		tmpEnginesMenu.Append ( tmpMenuItem );
 
-		tmp_Separator = new SeparatorMenuItem();
-		Render_Menu.Append (tmp_Separator);
+		tmpMenuItem = new MenuItem("Debug Grid");
+		tmpMenuItem.Activated += new EventHandler ( MenuSwitchEngineGrid );
+		tmpEnginesMenu.Append ( tmpMenuItem );
+
+		tmpMenuHeader = new MenuItem("E_ngines");
+		tmpMenuHeader.Submenu = tmpEnginesMenu;
+		tmpMainMenu.Append ( tmpMenuHeader );
+
+
+		Menu tmpRenderMenu = new Menu ();
+
+		tmpMenuItem = new MenuItem("_Render Image");
+		tmpMenuItem.AddAccelerator ("activate", _AcceleratorGroup, new AccelKey (Gdk.Key.R, Gdk.ModifierType.ControlMask, AccelFlags.Visible));
+		tmpMenuItem.Activated += new EventHandler ( Menu_Render );
+		tmpRenderMenu.Append (tmpMenuItem);
+
+		tmpSeparator = new SeparatorMenuItem();
+		tmpRenderMenu.Append (tmpSeparator);
 		//...
 
 		//Quality Submenu
-		Menu Render_Quality_Menu = new Menu();
+		Menu tmpRenderQualityMenu = new Menu();
 
-		this.Menu_Quality = new CheckMenuItem[8];
+		this._MenuQuality = new CheckMenuItem[8];
 
-		this.Menu_Quality[0] = new CheckMenuItem("_0 - Low");
-		this.Menu_Quality[0].Activated += new EventHandler ( Menu_Quality_Change_0 );
-		Render_Quality_Menu.Append ( this.Menu_Quality[0] );
+		this._MenuQuality[0] = new CheckMenuItem("_0 - Low");
+		this._MenuQuality[0].Activated += new EventHandler ( MenuQualityChange0 );
+		tmpRenderQualityMenu.Append ( this._MenuQuality[0] );
 
-		this.Menu_Quality[1] = new CheckMenuItem("_1 - Standard");
-		((CheckMenuItem)this.Menu_Quality[1]).Active = true;
-		this.Menu_Quality[1].Activated += new EventHandler ( Menu_Quality_Change_1 );
-		Render_Quality_Menu.Append ( this.Menu_Quality[1] );
+		this._MenuQuality[1] = new CheckMenuItem("_1 - Standard");
+		((CheckMenuItem)this._MenuQuality[1]).Active = true;
+		this._MenuQuality[1].Activated += new EventHandler ( MenuQualityChange1 );
+		tmpRenderQualityMenu.Append ( this._MenuQuality[1] );
 
-		this.Menu_Quality[2] = new CheckMenuItem("_2 - High");
-		this.Menu_Quality[2].Activated += new EventHandler ( Menu_Quality_Change_2 );
-		Render_Quality_Menu.Append ( this.Menu_Quality[2] );
+		this._MenuQuality[2] = new CheckMenuItem("_2 - High");
+		this._MenuQuality[2].Activated += new EventHandler ( MenuQualityChange2 );
+		tmpRenderQualityMenu.Append ( this._MenuQuality[2] );
 
-		this.Menu_Quality[3] = new CheckMenuItem("_3 - Very High (Slow)");
-		this.Menu_Quality[3].Activated += new EventHandler ( Menu_Quality_Change_3 );
-		Render_Quality_Menu.Append ( this.Menu_Quality[3] );
+		this._MenuQuality[3] = new CheckMenuItem("_3 - Very High (Slow)");
+		this._MenuQuality[3].Activated += new EventHandler ( MenuQualityChange3 );
+		tmpRenderQualityMenu.Append ( this._MenuQuality[3] );
 
-		this.Menu_Quality[4] = new CheckMenuItem("_4 - Super High (Very Slow)");
-		this.Menu_Quality[4].Activated += new EventHandler ( Menu_Quality_Change_4 );
-		Render_Quality_Menu.Append ( this.Menu_Quality[4] );
+		this._MenuQuality[4] = new CheckMenuItem("_4 - Super High (Very Slow)");
+		this._MenuQuality[4].Activated += new EventHandler ( MenuQualityChange4 );
+		tmpRenderQualityMenu.Append ( this._MenuQuality[4] );
 
-		this.Menu_Quality[5] = new CheckMenuItem("_5 - Ultra Super High (Very Very Slow)");
-		this.Menu_Quality[5].Activated += new EventHandler ( Menu_Quality_Change_5 );
-		Render_Quality_Menu.Append ( this.Menu_Quality[5] );
+		this._MenuQuality[5] = new CheckMenuItem("_5 - Ultra Super High (Very Very Slow)");
+		this._MenuQuality[5].Activated += new EventHandler ( MenuQualityChange5 );
+		tmpRenderQualityMenu.Append ( this._MenuQuality[5] );
 
-		this.Menu_Quality[6] = new CheckMenuItem("_6 - Ultra Super High (Very Slow Squared)");
-		this.Menu_Quality[6].Activated += new EventHandler ( Menu_Quality_Change_6 );
-		Render_Quality_Menu.Append ( this.Menu_Quality[6] );
+		this._MenuQuality[6] = new CheckMenuItem("_6 - Ultra Super High (Very Slow Squared)");
+		this._MenuQuality[6].Activated += new EventHandler ( MenuQualityChange6 );
+		tmpRenderQualityMenu.Append ( this._MenuQuality[6] );
 
-		this.Menu_Quality[7] = new CheckMenuItem("_7 - Gimongous");
-		this.Menu_Quality[7].Activated += new EventHandler ( Menu_Quality_Change_7 );
-		Render_Quality_Menu.Append ( this.Menu_Quality[7] );
+		this._MenuQuality[7] = new CheckMenuItem("_7 - Gimongous");
+		this._MenuQuality[7].Activated += new EventHandler ( MenuQualityChange7 );
+		tmpRenderQualityMenu.Append ( this._MenuQuality[7] );
 
-		tmp_Menu_Item = new MenuItem("Render _Quality");
-		tmp_Menu_Item.Submenu = Render_Quality_Menu;
-		Render_Menu.Append ( tmp_Menu_Item );
+		tmpMenuItem = new MenuItem("Render _Quality");
+		tmpMenuItem.Submenu = tmpRenderQualityMenu;
+		tmpRenderMenu.Append ( tmpMenuItem );
 		//End Quality Submenu
 
-		tmp_Separator = new SeparatorMenuItem();
-		Render_Menu.Append (tmp_Separator);
+		tmpSeparator = new SeparatorMenuItem();
+		tmpRenderMenu.Append (tmpSeparator);
 
-		tmp_Menu_Item = new CheckMenuItem ("Visual");
-		((CheckMenuItem)tmp_Menu_Item).Active = true;
-		tmp_Menu_Item.Activated += new EventHandler ( Menu_Quality_Toggle_Visual );
-		Render_Menu.Append (tmp_Menu_Item );
+		tmpMenuItem = new CheckMenuItem ("Visual");
+		((CheckMenuItem)tmpMenuItem).Active = true;
+		tmpMenuItem.Activated += new EventHandler ( MenuQualityToggleVisual );
+		tmpRenderMenu.Append (tmpMenuItem );
 
-		tmp_Menu_Header = new MenuItem("_Render");
-		tmp_Menu_Header.Submenu = Render_Menu;
-		Main_Menu.Append ( tmp_Menu_Header );
+		tmpMenuHeader = new MenuItem("_Render");
+		tmpMenuHeader.Submenu = tmpRenderMenu;
+		tmpMainMenu.Append ( tmpMenuHeader );
 
-		return Main_Menu;
+		return tmpMainMenu;
 	}
 	#endregion
 
-	private Widget User_Interface()
+	private Widget UserInterface()
 	{
-		VBox Window_Container = new VBox(false, 0);
-		VBox Application_Divide = new VBox(false, 12);
-		HBox Progress_Segment = new HBox(false, 6);
+		VBox tmpWindowContainer = new VBox(false, 0);
+		VBox tmpApplicationDivide = new VBox(false, 12);
+		HBox tmpProgressSegment = new HBox(false, 6);
 
-		Application_Divide.BorderWidth = 12;
+		tmpApplicationDivide.BorderWidth = 12;
 
-		Application_Divide.PackStart( this.Main_Chaos_Engine.Display , false, false, 0 );
+		tmpApplicationDivide.PackStart( this.tmpChaosDisplay.Display , false, false, 0 );
 
-		Progress_Segment.PackStart( this.Computation_Progress );
+		tmpProgressSegment.PackStart( this._ComputationProgressBar );
 
-		Application_Divide.PackStart( Progress_Segment, false, false, 0 );
+		tmpApplicationDivide.PackStart( tmpProgressSegment, false, false, 0 );
 
-		Window_Container.PackStart( this.Application_Menu() , false, false, 0 );
-		Window_Container.PackStart( Application_Divide, false, false, 0 );
+		tmpWindowContainer.PackStart( this._ApplicationMenu() , false, false, 0 );
+		tmpWindowContainer.PackStart( tmpApplicationDivide, false, false, 0 );
 
-		return Window_Container;
+		return tmpWindowContainer;
 	}
 }
